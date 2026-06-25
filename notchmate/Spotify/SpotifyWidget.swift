@@ -83,18 +83,34 @@ struct SpotifyWidget: View {
 
     // MARK: - Idle
 
+    @ViewBuilder
     private var idleView: some View {
-        HStack(spacing: 8) {
-            Image(systemName: spotify.permissionDenied ? "lock.fill" : "music.note")
-                .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.5))
-            Text(spotify.permissionDenied
-                 ? "Allow Spotify access in System Settings"
-                 : "Nothing playing")
-                .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.5))
-                .lineLimit(1)
-            Spacer(minLength: 0)
+        if spotify.permissionDenied {
+            Button(action: { spotify.openAutomationSettings() }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.orange.opacity(0.85))
+                    Text("Allow Spotify access")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+            }
+            .buttonStyle(.plain)
+            .help("Opens Privacy & Security > Automation so you can grant notchmate access to Spotify")
+        } else {
+            HStack(spacing: 8) {
+                Image(systemName: "music.note")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.5))
+                Text("Nothing playing")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
         }
     }
 
