@@ -31,6 +31,7 @@
 		2222222222222222222222C6 /* AboutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B6 /* AboutPane.swift */; };
 		2222222222222222222222C7 /* MediaPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B7 /* MediaPane.swift */; };
 		2222222222222222222222C8 /* HUDsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B8 /* HUDsPane.swift */; };
+		2222222222222222222222D1 /* MediaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111C1 /* MediaController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,6 +60,8 @@
 		1111111111111111111111B6 /* AboutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/AboutPane.swift; sourceTree = "<group>"; };
 		1111111111111111111111B7 /* MediaPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/MediaPane.swift; sourceTree = "<group>"; };
 		1111111111111111111111B8 /* HUDsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/HUDsPane.swift; sourceTree = "<group>"; };
+		1111111111111111111111C1 /* MediaController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Media/MediaController.swift; sourceTree = "<group>"; };
+		1111111111111111111111C2 /* notchmate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = notchmate.entitlements; sourceTree = "<group>"; };
 		3333333333333333333333C1 /* notchmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = notchmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -108,6 +111,8 @@
 				1111111111111111111111B6 /* AboutPane.swift */,
 				1111111111111111111111B7 /* MediaPane.swift */,
 				1111111111111111111111B8 /* HUDsPane.swift */,
+				1111111111111111111111C1 /* MediaController.swift */,
+				1111111111111111111111C2 /* notchmate.entitlements */,
 				1111111111111111111111A7 /* Info.plist */,
 			);
 			path = notchmate;
@@ -213,6 +218,7 @@
 				2222222222222222222222C6 /* AboutPane.swift in Sources */,
 				2222222222222222222222C7 /* MediaPane.swift in Sources */,
 				2222222222222222222222C8 /* HUDsPane.swift in Sources */,
+				2222222222222222222222D1 /* MediaController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,10 +265,11 @@
 		8888888888888888888888H3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = notchmate/notchmate.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = notchmate/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -280,10 +287,11 @@
 		8888888888888888888888H4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = notchmate/notchmate.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = notchmate/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -9,9 +9,10 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - Native macOS app, Swift + SwiftUI, deployment target macOS 14. Hand-authored `.xcodeproj` (no CocoaPods/Carthage/SPM deps; zero third-party).
 - Headless build (two steps - signing is required for Spotify TCC):
   1. `xcodebuild -project notchmate.xcodeproj -scheme notchmate -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO build`
-  2. `codesign --force --deep --sign - build/Build/Products/Release/notchmate.app`
+  2. `codesign --force --deep --options runtime --entitlements notchmate/notchmate.entitlements --sign - build/Build/Products/Release/notchmate.app`
   Output: `build/Build/Products/Release/notchmate.app`.
-  The xcodeproj already sets `CODE_SIGN_IDENTITY = "-"` for the Xcode IDE path; the CLI path needs the explicit post-build `codesign` step because `CODE_SIGNING_ALLOWED=NO` overrides it.
+  The xcodeproj sets `CODE_SIGN_IDENTITY = "-"` and `CODE_SIGN_ENTITLEMENTS = notchmate/notchmate.entitlements` for Xcode IDE builds; the CLI path needs the explicit post-build `codesign` step because `CODE_SIGNING_ALLOWED=NO` overrides it.
+  **`--options runtime` is now required**: on macOS 26 (26.5.1, confirmed 2026-06-25), the OS blocks outgoing Apple Events for apps without hardened runtime + the `com.apple.security.automation.apple-events` entitlement. Without these flags the app never appears in System Settings > Privacy > Automation and the Spotify widget is permanently stuck on "Nothing playing". Plain `--sign -` (without `--options runtime`) no longer suffices on macOS 26.
 - `Info.plist` is checked in and wired via `INFOPLIST_FILE` with `GENERATE_INFOPLIST_FILE = NO`. `LSUIElement = true` (no dock icon / agent app), so the app has no standard window - all UI is the NSPanel.
 
 ## Architecture
@@ -20,9 +21,10 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - `Settings/` - `NotchPreferences` (shared `ObservableObject` preferences store, `@Published` fields backed by `UserDefaults`; `launchAtLogin` reads/writes `SMAppService.mainApp`), `SettingsWindowController` (creates/reuses an `NSWindow` hosting `SettingsView` on demand, activates the app on show), `SettingsView` (`NavigationSplitView` sidebar with `SettingsPane` enum rows), `GeneralPane` (show menu-bar icon toggle + launch at login via `SMAppService`), `AboutPane` (version/build from Bundle, link to repo), `MediaPane`/`HUDsPane` (stubs for future panes). Free-tier, no license gate.
 - `App/StatusBarController.swift` - owns `NSStatusItem`; subscribes to `NotchPreferences.$showMenuBarIcon` and installs/removes the item reactively; menu provides "Settings..." and "Quit notchmate".
 - `Notch/` - `NotchPanel` (borderless non-activating NSPanel at `.statusBar` level), `NotchWindowController` (screen/notch geometry + collapsed/expanded resize), `NotchView` (root SwiftUI, hover -> expand).
-- `Spotify/` - `SpotifyController` (ObservableObject; AppleScript poll + transport) and `SpotifyWidget` (collapsed/expanded/idle SwiftUI).
+- `Media/` - `MediaController` (ObservableObject wrapper; aggregates `SpotifyController` + `SystemNowPlayingController`, routes transport to the active source, republishes `nowPlaying`/`artwork`/`permissionDenied` to the rest of the app) and `SystemNowPlayingController` (reads system-wide now-playing via MediaRemote private framework, loaded at runtime via dlopen/dlsym). Free-tier.
+- `Spotify/` - `SpotifyController` (ObservableObject; AppleScript poll + transport; unchanged from v1) and `SpotifyWidget.swift` which now contains `MediaWidget` (the now-playing UI, backed by `MediaController`; supports Spotify and system sources, animated equalizer bars, artwork/compact layout from `NotchPreferences`).
 - `ClaudeSessions/` - `ClaudeSessionsController` (ObservableObject; polls live `claude` processes off-main, publishes `[ClaudeSession]` + a project grouping) and `ClaudeSessionsWidget` (collapsed count glyph / expanded per-project list; renders nothing at zero). Free-tier, no license gate.
-- `Mochi/` - the mascot. `MochiMood` (pure enum + `derive` + per-mood accent color; no UI deps) and `MochiView` (code-drawn SwiftUI mochi-robot; no controller of its own - it observes the existing Spotify/Claude controllers). Free-tier, no license gate.
+- `Mochi/` - the mascot. `MochiMood` (pure enum + `derive` + per-mood accent color; no UI deps) and `MochiView` (code-drawn SwiftUI mochi-robot; observes `MediaController` and `ClaudeSessionsController` - dances to ANY media source, not just Spotify). Free-tier, no license gate.
 - `Git/` - `GitController` (ObservableObject; runs `git` off-main in the focused repo, publishes `GitState?` to main) and `GitWidget` (collapsed branch + dirty dot / expanded branch+repo+ahead/behind; renders nothing with no repo). Free-tier.
 - `Timer/` - `FocusTimerController` (ObservableObject; Pomodoro state machine on a `Timer`, posts a local `UNUserNotification` on completion) and `FocusTimerWidget` (collapsed countdown when active / expanded time + Start/Pause/Reset). Free-tier.
 - `SystemStats/` - `SystemStatsController` (ObservableObject; Mach host CPU/mem off-main, publishes `SystemSample` to main) and `SystemStatsWidget` (collapsed CPU% only above threshold / expanded CPU+mem bars). Free-tier.
@@ -47,11 +49,15 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 The guard also keeps a closed Spotify silent (idle state, no error spam).
 - `NSAppleScript` runs on a dedicated serial queue (not main); results published back to main.
 Artwork is fetched from `artwork url` and cached per track id.
-- **Code signing is required for Spotify TCC - this is the root cause of "prompt never fires":** macOS TCC needs a stable code identity (signing cert or ad-hoc hash) to attach an Automation permission grant to.
-A fully unsigned binary (`CODE_SIGNING_ALLOWED=NO` with no post-build signing) has no identity - the TCC prompt never appears and every Apple Event returns -1743.
-Fix: run `codesign --force --deep --sign - <app>` after every `xcodebuild` (the `-` identity is ad-hoc - free, no developer account needed).
-The xcodeproj's `CODE_SIGN_IDENTITY = "-"` already handles this for Xcode IDE builds; only the headless CLI path needs the explicit post-build step.
-**Rebuild caveat:** ad-hoc identity = binary hash, so it changes each time you rebuild. macOS will re-prompt for Automation access after each fresh build. Stable Developer ID signing (the eventual $99 path) eliminates re-prompts permanently.
+- **Apple Events on macOS 26 require hardened runtime + entitlement (ROOT CAUSE OF "prompt never fires"):** On macOS 26 (26.5.1, confirmed 2026-06-25), the OS blocks outgoing Apple Events for apps without hardened runtime (`--options runtime`) AND the `com.apple.security.automation.apple-events` entitlement. Without both:
+  - The app never appears in System Settings > Privacy > Automation (TCC never records it).
+  - No prompt fires.
+  - Every Apple Event silently returns -1743 (`errAEEventNotPermitted`).
+  - `osascript` works fine because CLI tools are unaffected; only app binaries with hardened runtime are subject to this gate.
+  Fix: `codesign --force --deep --options runtime --entitlements notchmate/notchmate.entitlements --sign - <app>`.
+  The entitlements file lives at `notchmate/notchmate.entitlements` and contains only `com.apple.security.automation.apple-events = true`.
+  The xcodeproj now sets `ENABLE_HARDENED_RUNTIME = YES` and `CODE_SIGN_ENTITLEMENTS = notchmate/notchmate.entitlements` so Xcode IDE builds get this automatically.
+  **Rebuild caveat:** ad-hoc identity = binary hash, so it changes each time you rebuild. macOS will re-prompt after each fresh build. Stable Developer ID signing eliminates re-prompts permanently.
 - **Spotify Automation TCC flow:** the TCC prompt fires on the first poll where Spotify is running (the `tell application "Spotify"` block sends the Apple Event).
 `NSAppleEventsUsageDescription` is set in Info.plist.
 `SpotifyController.executeScript` logs all errors with `NSLog("[SpotifyController] AppleScript error %d: %@")` so failures are diagnosable in Console.app.
@@ -82,3 +88,9 @@ Bind them in any pane view with `@ObservedObject private var prefs = NotchPrefer
 The `launchAtLogin` property is intentionally computed (no backing `@Published`) - it reads the real `SMAppService.mainApp.status` and calls `register()`/`unregister()`; errors are logged via `NSLog` and the toggle reflects true state.
 - **SMAppService.mainApp in unsigned builds:** `register()` throws in unsigned/headless builds; the toggle will flip back immediately because the `get` reflects real state.
 This is correct behavior - do not fake a persisted bool for this toggle.
+- **MediaRemote (private framework) on macOS 26 - restricted:** `MRMediaRemoteGetNowPlayingInfo` (`Media/MediaController.swift`, `SystemNowPlayingController`) is loaded at runtime via `dlopen`/`dlsym` from `/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote`. On macOS 26 (26.5.1, confirmed 2026-06-25), the binary lives in the dyld shared cache (not on disk) but `dlopen` of the framework path still resolves through the shared cache - the function pointer is obtained successfully.
+However, `MRMediaRemoteGetNowPlayingInfo` returns nil to its callback for apps without the private `com.apple.mediaremote` entitlement (reserved for first-party Apple apps). This means "Now Playing (any app)" will consistently show "Nothing playing" on macOS 15.4+ and macOS 26, even when music IS actively playing from another app.
+The `SystemNowPlayingController` sets `unavailable = true` only when `dlopen`/`dlsym` completely fails (framework truly absent from shared cache). A nil callback result is treated as "nothing playing" - indistinguishable from silence.
+`MRMediaRemoteSendCommand` (transport for the system NP source) is similarly a silent no-op on macOS 26 without entitlements.
+**Consequence:** "Now Playing (any app)" is effectively non-functional on macOS 26. `MediaPane` surfaces a platform-version warning. Spotify source remains fully functional and is the recommended default.
+- **MediaController and media source switching:** `NotchWindowController` owns one `MediaController` which wraps both `SpotifyController` and `SystemNowPlayingController`. Both controllers start polling on `show()` regardless of active source, so switching sources in Settings is instant. `rebind()` cancels old Combine subscriptions and creates new ones for the new source; it also seeds initial values immediately to prevent a stale-data flash.

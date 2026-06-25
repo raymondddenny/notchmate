@@ -1,6 +1,6 @@
 # notchmate
 
-Mac notch utility for developers - Spotify now-playing + (later) live Claude Code session monitoring.
+Mac notch utility for developers - now-playing music widget, live Claude Code session monitoring, and developer widgets.
 
 Freemium, open-core. macOS app (Swift + SwiftUI).
 
@@ -9,8 +9,8 @@ Freemium, open-core. macOS app (Swift + SwiftUI).
 A minimal notch-app skeleton with a Spotify now-playing widget:
 
 - A borderless, always-on-top, non-activating floating panel pinned to the screen's notch.
-- **Collapsed** state: compact strip with artwork thumb, "Artist - Track", and a play-state glyph.
-- **Expanded** state (on hover): larger artwork, full track/artist/album, and play / pause / next / prev controls.
+- **Collapsed** state: compact strip with optional artwork thumb, "Artist - Track", and an animated equalizer indicator (bouncing bars when playing, static when paused).
+- **Expanded** state (on hover): artwork or compact text layout (user's choice), full track/artist/album, play / pause / next / prev controls.
 - On Macs **without** a physical notch, the same content renders as a floating rounded pill centered at the top of the screen.
 - Spotify is polled over AppleScript about once per second. When Spotify is closed or idle, a clean "Nothing playing" state is shown (no crashes, no error spam, and Spotify is never auto-launched).
 
@@ -127,9 +127,13 @@ Headless, from the repo root (two commands - the signing step is required for Sp
 xcodebuild -project notchmate.xcodeproj -scheme notchmate -configuration Release \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 
-# 2. Ad-hoc sign - macOS TCC requires a stable code identity to attach the
-#    Automation permission to. Without this the Spotify prompt never fires.
-codesign --force --deep --sign - build/Build/Products/Release/notchmate.app
+# 2. Ad-hoc sign with hardened runtime + Apple Events entitlement.
+#    Required for Spotify TCC: hardened runtime blocks outgoing Apple Events
+#    unless com.apple.security.automation.apple-events is present, and macOS 26
+#    requires this even for non-sandboxed apps.
+codesign --force --deep --options runtime \
+  --entitlements notchmate/notchmate.entitlements \
+  --sign - build/Build/Products/Release/notchmate.app
 ```
 
 The app bundle is produced at:
@@ -173,9 +177,10 @@ xattr -dr com.apple.quarantine build/Build/Products/Release/notchmate.app
 
 If macOS still refuses to open it, go to **System Settings > Privacy & Security**, scroll to the message about `notchmate` being blocked, and click **Open Anyway**.
 
-> **Signing requirement:** the `codesign` step in the build instructions above is mandatory for the Spotify widget to work.
-> An unsigned binary has no stable identity, so macOS TCC cannot attach the Automation permission to it - the Spotify prompt will never appear and the widget stays stuck on "Nothing playing".
-> Ad-hoc signing gives the binary a hash-based identity that TCC can use.
+> **Signing requirement:** the `codesign` step above is mandatory for the Spotify widget to work.
+> The app must be signed with `--options runtime` (hardened runtime) and the `com.apple.security.automation.apple-events` entitlement.
+> Without these, macOS 26 silently blocks all outgoing Apple Events before TCC can record or prompt - the Spotify widget stays stuck on "Nothing playing" and the app never appears in System Settings > Privacy & Security > Automation.
+> Ad-hoc signing (`--sign -`) is free; no developer account needed.
 
 ### Automation permission (first run)
 
@@ -212,12 +217,12 @@ The first time you press **Start** on the focus timer, macOS asks to allow notif
 
 Open Settings with the menu-bar icon (⌘,) or via the status-bar item.
 
-| Pane    | Controls                                                       |
-|---------|----------------------------------------------------------------|
-| General | Show menu-bar icon toggle; Launch at login (`SMAppService`)    |
-| Media   | Coming soon                                                    |
-| HUDs    | Coming soon                                                    |
-| About   | Version, build, link to this repo                              |
+| Pane    | Controls                                                                                                                   |
+|---------|----------------------------------------------------------------------------------------------------------------------------|
+| General | Show menu-bar icon toggle; Launch at login (`SMAppService`)                                                                |
+| Media   | **Music source** (Spotify only / Now Playing any app); **Layout** (with artwork thumbnail / compact text-only)            |
+| HUDs    | Coming soon                                                                                                                |
+| About   | Version, build, link to this repo                                                                                          |
 
 **Show menu-bar icon** persists in `UserDefaults`.
 When hidden, the icon is removed from the system status bar; it can be restored by toggling back on in a Settings window already open.
@@ -235,7 +240,8 @@ notchmate/
   App/            - app entry point + AppDelegate + StatusBarController
   Notch/          - NSPanel shell, screen/notch geometry, root SwiftUI view
   Settings/       - preferences store, settings window, all panes
-  Spotify/        - Spotify AppleScript polling + the now-playing widget
+  Media/          - MediaController (aggregates Spotify + system NowPlaying sources)
+  Spotify/        - SpotifyController (AppleScript polling) + MediaWidget (now-playing UI)
   ClaudeSessions/ - claude-process detection + the session-count widget
   Mochi/          - the reactive mascot (mood model + code-drawn SwiftUI view)
   Git/            - focused-repo branch/dirty glance (git via Process)

@@ -7,7 +7,7 @@ import Combine
 /// UI toggles between collapsed and expanded.
 final class NotchWindowController {
     private let panel: NotchPanel
-    private let spotify = SpotifyController()
+    private let media = MediaController()
     private let claude = ClaudeSessionsController()
     private let git: GitController
     private let focus = FocusTimerController()
@@ -50,7 +50,7 @@ final class NotchWindowController {
         panel = NotchPanel(contentRect: NSRect(origin: .zero, size: geometry.collapsedSize))
 
         let root = NotchView(
-            spotify: spotify,
+            media: media,
             claude: claude,
             git: git,
             focus: focus,
@@ -85,7 +85,7 @@ final class NotchWindowController {
 
     func show() {
         panel.orderFrontRegardless()
-        spotify.start()
+        media.start()
         claude.start()
         git.start()
         // FocusTimerController has no polling to start; its start() is the user action.

@@ -4,7 +4,7 @@ import SwiftUI
 /// hosts feature widgets. Hover toggles expanded state and is reported upward so the
 /// window controller can resize the panel.
 struct NotchView: View {
-    @ObservedObject var spotify: SpotifyController
+    @ObservedObject var media: MediaController
     @ObservedObject var claude: ClaudeSessionsController
     @ObservedObject var git: GitController
     @ObservedObject var focus: FocusTimerController
@@ -38,19 +38,18 @@ struct NotchView: View {
     }
 
     // Each widget owns its own collapsed/expanded rendering; the shell only chooses
-    // the container. Collapsed: a single strip (Claude count trails the Spotify
-    // glance). Expanded: stacked blocks. Widgets render nothing when they have no
-    // content, so neither knows or depends on the other.
+    // the container. Collapsed: a single strip (Claude count trails the media glance).
+    // Expanded: stacked blocks. Widgets render nothing when they have no content.
     @ViewBuilder
     private var content: some View {
         if hovering {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    MochiView(spotify: spotify, claude: claude, expanded: true)
+                    MochiView(media: media, claude: claude, expanded: true)
                     Spacer(minLength: 0)
                 }
-                SpotifyWidget(spotify: spotify, expanded: true)
+                MediaWidget(media: media, expanded: true)
                 divider
                 FocusTimerWidget(timer: focus, expanded: true)
                 if git.state != nil {
@@ -65,11 +64,11 @@ struct NotchView: View {
                 SystemStatsWidget(stats: stats, expanded: true)
             }
         } else {
-            // Collapsed strip: Spotify takes the flexible space; the rest are compact
+            // Collapsed strip: media takes the flexible space; the rest are compact
             // chips that each show only when they have something worth surfacing.
             HStack(spacing: 10) {
-                MochiView(spotify: spotify, claude: claude, expanded: false)
-                SpotifyWidget(spotify: spotify, expanded: false)
+                MochiView(media: media, claude: claude, expanded: false)
+                MediaWidget(media: media, expanded: false)
                 FocusTimerWidget(timer: focus, expanded: false)
                 ClaudeSessionsWidget(sessions: claude, expanded: false)
                 GitWidget(git: git, expanded: false)
