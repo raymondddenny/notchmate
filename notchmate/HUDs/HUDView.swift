@@ -1,7 +1,36 @@
 import SwiftUI
 
-/// Compact icon + level-bar + percentage row shown in the collapsed notch strip
-/// while a volume or brightness HUD event is active (~1.5 s).
+/// Standalone overlay panel content rendered in the HUD panel below the notch.
+/// Observes HUDController directly and animates in/out as events arrive.
+struct HUDOverlayView: View {
+    @ObservedObject var hud: HUDController
+
+    var body: some View {
+        ZStack {
+            if let event = hud.currentEvent {
+                HUDView(event: event)
+                    .padding(.horizontal, Theme.sp3)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Theme.panelBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(Theme.panelBorder, lineWidth: 1)
+                            )
+                            .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
+            }
+        }
+        .animation(.easeOut(duration: 0.15), value: hud.currentEvent != nil)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Compact icon + level-bar + percentage row.
+/// Used inside HUDOverlayView (the below-notch overlay) and anywhere else a
+/// single-event HUD row is needed.
 struct HUDView: View {
     let event: HUDEvent
 

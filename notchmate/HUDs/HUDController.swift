@@ -181,7 +181,8 @@ final class HUDController: ObservableObject {
     // MARK: - Volume reading
 
     private func handleVolumeChange() {
-        guard NotchPreferences.shared.hudVolumeEnabled else { return }
+        guard NotchPreferences.shared.hudSuppressSystem,
+              NotchPreferences.shared.hudVolumeEnabled else { return }
         showEvent(.volume(readVolume()))
     }
 
@@ -247,7 +248,8 @@ final class HUDController: ObservableObject {
     }
 
     private func checkBrightness() {
-        guard NotchPreferences.shared.hudBrightnessEnabled, let val = rawBrightness() else { return }
+        guard NotchPreferences.shared.hudSuppressSystem,
+              NotchPreferences.shared.hudBrightnessEnabled, let val = rawBrightness() else { return }
         defer { lastBrightness = val }
         guard lastBrightness >= 0, abs(val - lastBrightness) > 0.01 else { return }
         showEvent(.brightness(val))

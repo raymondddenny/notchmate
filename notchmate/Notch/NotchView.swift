@@ -10,7 +10,6 @@ struct NotchView: View {
     @ObservedObject var focus: FocusTimerController
     @ObservedObject var stats: SystemStatsController
     @ObservedObject var lyrics: LyricsController
-    @ObservedObject var hud: HUDController
     let hasNotch: Bool
     let topInset: CGFloat
     let onHoverChange: (Bool) -> Void
@@ -106,18 +105,9 @@ struct NotchView: View {
 
     // MARK: - Collapsed strip
 
-    // HUD event takes priority for ~1.5s; otherwise widget chips from enabled modules.
+    // HUD events now appear in a separate panel below the notch (see NotchWindowController).
     private var collapsedStrip: some View {
-        Group {
-            if let event = hud.currentEvent {
-                HUDView(event: event)
-                    .transition(.opacity)
-            } else {
-                collapsedChips
-                    .transition(.opacity)
-            }
-        }
-        .animation(.easeOut(duration: 0.15), value: hud.currentEvent != nil)
+        collapsedChips
     }
 
     private var collapsedChips: some View {

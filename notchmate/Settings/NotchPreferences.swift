@@ -112,7 +112,15 @@ final class NotchPreferences: ObservableObject {
     }
 
     @Published var hudSuppressSystem: Bool {
-        didSet { UserDefaults.standard.set(hudSuppressSystem, forKey: "hudSuppressSystem") }
+        didSet {
+            UserDefaults.standard.set(hudSuppressSystem, forKey: "hudSuppressSystem")
+            // Enabling the master defaults both sub-toggles to ON so the first-run
+            // experience works without extra taps. The user can then turn either off.
+            if hudSuppressSystem {
+                hudVolumeEnabled = true
+                hudBrightnessEnabled = true
+            }
+        }
     }
 
     // MARK: - Focus stats
