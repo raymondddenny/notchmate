@@ -9,6 +9,9 @@ final class NotchWindowController {
     private let panel: NotchPanel
     private let spotify = SpotifyController()
     private let claude = ClaudeSessionsController()
+    private let git: GitController
+    private let focus = FocusTimerController()
+    private let stats = SystemStatsController()
     private let isExpanded = CurrentValueSubject<Bool, Never>(false)
     private var cancellables = Set<AnyCancellable>()
 
@@ -37,12 +40,16 @@ final class NotchWindowController {
     private var geometry: Geometry
 
     init() {
+        git = GitController(claude: claude)
         geometry = NotchWindowController.computeGeometry(for: NSScreen.main)
         panel = NotchPanel(contentRect: NSRect(origin: .zero, size: geometry.collapsedSize))
 
         let root = NotchView(
             spotify: spotify,
             claude: claude,
+            git: git,
+            focus: focus,
+            stats: stats,
             hasNotch: geometry.hasNotch,
             topInset: geometry.topInset,
             onHoverChange: { [weak self] hovering in
@@ -55,29 +62,42 @@ final class NotchWindowController {
 
         positionPanel(size: geometry.collapsedSize)
 
-        // While expanded, re-fit the panel as sessions appear/disappear so the list
-        // is never clipped and idle leaves no dead space.
-        claude.$sessions
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self, self.isExpanded.value else { return }
-                self.positionPanel(size: self.currentExpandedSize, animated: true)
-            }
-            .store(in: &cancellables)
+        // While expanded, re-fit the panel as blocks that change height appear/disappear
+        // (Claude session list, git block) so nothing is clipped and idle leaves no dead
+        // space. Timer/stats blocks are always shown, so their content changes don't
+        // affect height.
+        Publishers.Merge(
+            claude.$sessions.map { _ in () },
+            git.$state.map { _ in () }
+        )
+        .receive(on: RunLoop.main)
+        .sink { [weak self] _ in
+            guard let self, self.isExpanded.value else { return }
+            self.positionPanel(size: self.currentExpandedSize, animated: true)
+        }
+        .store(in: &cancellables)
     }
 
     func show() {
         panel.orderFrontRegardless()
         spotify.start()
         claude.start()
+        git.start()
+        focus.start()
+        stats.start()
     }
 
-    /// Extra expanded height for the Claude block: header + up to 3 project rows
-    /// (the widget caps the list and folds the rest into a "+N more" line).
+    /// Extra expanded height beyond the base (Mochi + Spotify) block, summed per widget:
+    /// - Timer + System stats are always shown (fixed blocks).
+    /// - Claude block: header + up to 3 project rows (rest folds into "+N more").
+    /// - Git block: one two-line row, only when a repo is in context.
     private var currentExpandedSize: NSSize {
         let rows = min(claude.groups.count, 3) + (claude.groups.count > 3 ? 1 : 0)
-        let extra: CGFloat = claude.count > 0 ? CGFloat(34 + rows * 18) : 0
-        return geometry.expandedSize(extraHeight: extra)
+        let claudeExtra: CGFloat = claude.count > 0 ? CGFloat(34 + rows * 18) : 0
+        let gitExtra: CGFloat = git.state != nil ? 46 : 0
+        let timerExtra: CGFloat = 56
+        let statsExtra: CGFloat = 56
+        return geometry.expandedSize(extraHeight: claudeExtra + gitExtra + timerExtra + statsExtra)
     }
 
     // MARK: - Expand / collapse

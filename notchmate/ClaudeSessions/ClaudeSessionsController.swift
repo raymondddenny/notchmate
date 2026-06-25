@@ -1,10 +1,11 @@
 import AppKit
 import Combine
 
-/// One running Claude Code session, keyed by process id. `project` is the basename of
-/// the process's working directory when it could be resolved, else nil.
+/// One running Claude Code session, keyed by process id. `dir` is the full working
+/// directory path when it could be resolved (else nil); `project` is its basename.
 struct ClaudeSession: Equatable, Identifiable {
     let id: Int          // pid
+    let dir: String?     // full cwd path (reused by GitController)
     let project: String?
 }
 
@@ -83,7 +84,7 @@ final class ClaudeSessionsController: ObservableObject {
         if pids.isEmpty { return [] }
 
         let cwds = resolveCwds(pids)
-        return pids.map { ClaudeSession(id: $0, project: cwds[$0].map(projectName)) }
+        return pids.map { ClaudeSession(id: $0, dir: cwds[$0], project: cwds[$0].map(projectName)) }
     }
 
     /// True when argv is an interactive `claude` session: argv[0] is the `claude`

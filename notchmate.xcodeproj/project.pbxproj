@@ -17,6 +17,12 @@
 		2222222222222222222222B8 /* ClaudeSessionsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A9 /* ClaudeSessionsWidget.swift */; };
 		2222222222222222222222B9 /* MochiMood.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AA /* MochiMood.swift */; };
 		2222222222222222222222BA /* MochiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AB /* MochiView.swift */; };
+		2222222222222222222222BB /* GitController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AC /* GitController.swift */; };
+		2222222222222222222222BC /* GitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AD /* GitWidget.swift */; };
+		2222222222222222222222BD /* FocusTimerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AE /* FocusTimerController.swift */; };
+		2222222222222222222222BE /* FocusTimerWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AF /* FocusTimerWidget.swift */; };
+		2222222222222222222222BF /* SystemStatsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AG /* SystemStatsController.swift */; };
+		2222222222222222222222BG /* SystemStatsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AH /* SystemStatsWidget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +37,12 @@
 		1111111111111111111111A9 /* ClaudeSessionsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSessions/ClaudeSessionsWidget.swift; sourceTree = "<group>"; };
 		1111111111111111111111AA /* MochiMood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MochiMood.swift; sourceTree = "<group>"; };
 		1111111111111111111111AB /* MochiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MochiView.swift; sourceTree = "<group>"; };
+		1111111111111111111111AC /* GitController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Git/GitController.swift; sourceTree = "<group>"; };
+		1111111111111111111111AD /* GitWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Git/GitWidget.swift; sourceTree = "<group>"; };
+		1111111111111111111111AE /* FocusTimerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timer/FocusTimerController.swift; sourceTree = "<group>"; };
+		1111111111111111111111AF /* FocusTimerWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timer/FocusTimerWidget.swift; sourceTree = "<group>"; };
+		1111111111111111111111AG /* SystemStatsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemStats/SystemStatsController.swift; sourceTree = "<group>"; };
+		1111111111111111111111AH /* SystemStatsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemStats/SystemStatsWidget.swift; sourceTree = "<group>"; };
 		3333333333333333333333C1 /* notchmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = notchmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -66,6 +78,12 @@
 				1111111111111111111111A9 /* ClaudeSessionsWidget.swift */,
 				1111111111111111111111AA /* MochiMood.swift */,
 				1111111111111111111111AB /* MochiView.swift */,
+				1111111111111111111111AC /* GitController.swift */,
+				1111111111111111111111AD /* GitWidget.swift */,
+				1111111111111111111111AE /* FocusTimerController.swift */,
+				1111111111111111111111AF /* FocusTimerWidget.swift */,
+				1111111111111111111111AG /* SystemStatsController.swift */,
+				1111111111111111111111AH /* SystemStatsWidget.swift */,
 				1111111111111111111111A7 /* Info.plist */,
 			);
 			path = notchmate;
@@ -157,6 +175,12 @@
 				2222222222222222222222B8 /* ClaudeSessionsWidget.swift in Sources */,
 				2222222222222222222222B9 /* MochiMood.swift in Sources */,
 				2222222222222222222222BA /* MochiView.swift in Sources */,
+				2222222222222222222222BB /* GitController.swift in Sources */,
+				2222222222222222222222BC /* GitWidget.swift in Sources */,
+				2222222222222222222222BD /* FocusTimerController.swift in Sources */,
+				2222222222222222222222BE /* FocusTimerWidget.swift in Sources */,
+				2222222222222222222222BF /* SystemStatsController.swift in Sources */,
+				2222222222222222222222BG /* SystemStatsWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

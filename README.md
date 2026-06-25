@@ -62,6 +62,46 @@ No special entitlement is required: `ps` and `lsof` report on the user's own pro
 The app is sandbox-free (no App Sandbox entitlement), which is what allows it to spawn `ps`/`lsof`; if it were ever sandboxed, process enumeration of other processes would be blocked.
 If process enumeration ever fails it degrades silently to "no sessions".
 
+## Slice 4 (current)
+
+The three remaining free-tier widgets that round out v1, each in its own folder beside the others.
+
+### Git glance (`Git/`)
+
+A "what am I working on" glance at the **focused repo**.
+
+- **Focused repo** = the working directory of the most-recently-launched live Claude Code session (highest pid). This reuses the session dirs `ClaudeSessionsController` already resolves, so it needs no extra permission and is a reliable proxy for "the project you're in". When no session has a resolvable repo, the widget hides.
+- **Collapsed:** branch name + a dot - amber when the working tree is dirty, green when clean.
+- **Expanded:** branch + dirty dot, the repo name and a `clean`/`modified` label, plus ahead/behind arrows when an upstream is set.
+- **Data source:** runs `git -C <dir>` (`rev-parse --show-toplevel` / `--abbrev-ref HEAD`, `status --porcelain`, and `rev-list --count --left-right @{upstream}...HEAD`) off-main, published to main. Polled every ~4s and re-targeted immediately when the session set changes. Any failure (no repo, no Command Line Tools, detached HEAD, no upstream) degrades to a partial or hidden state - never spams.
+
+### Focus timer (`Timer/`)
+
+A classic 25-minute Pomodoro focus timer, driven from the expanded notch.
+
+- **Collapsed:** a compact `MM:SS` countdown while running (dimmed while paused); hidden when idle.
+- **Expanded:** the time plus **Start/Pause** and **Reset** controls (always shown, so there's always a place to begin).
+- **Data source:** a plain SwiftUI/Foundation `Timer`, no dependency. On completion it posts a local `UNUserNotification`.
+- **Permission:** notification authorization is requested lazily the first time you press Start. If you deny it, the countdown still works - you just don't get the completion banner. Re-enable under **System Settings > Notifications > notchmate**.
+
+### System stats (`SystemStats/`)
+
+Live CPU and memory load, loudest exactly when the machine is busy.
+
+- **Collapsed:** a CPU% badge that only appears when CPU is high (≥70%) - quiet when the machine is idle.
+- **Expanded:** CPU and memory mini-bars with percentages, always shown.
+- **Data source:** Mach host statistics (`host_statistics(HOST_CPU_LOAD_INFO)` for CPU as a delta between samples; `host_statistics64(HOST_VM_INFO64)` + `ProcessInfo.physicalMemory` for memory). No third-party dep, no permission. Polled every ~2s off-main. The first CPU reading is 0 until a baseline sample exists.
+
+### Collapsed layout decisions
+
+The collapsed strip stays uncluttered by surfacing each new widget only when it has something worth showing:
+
+- The timer countdown shows only while a session is running.
+- The git branch + dirty dot show only when a repo is in context.
+- The CPU badge shows only under heavy load.
+
+Full system stats and the timer controls live in the **expanded** panel only. Spotify keeps the flexible middle space (its title truncates), and the compact chips trail it. This holds for both the notch and the non-notch pill layout.
+
 ## Requirements
 
 - macOS 14 (Sonoma) or later
@@ -114,6 +154,10 @@ The Spotify widget talks to the Spotify desktop app via AppleScript. On first ru
 
 Click **OK**. If you dismiss it, the widget stays in the idle state - re-enable it under **System Settings > Privacy & Security > Automation > notchmate > Spotify**.
 
+### Notification permission (focus timer)
+
+The first time you press **Start** on the focus timer, macOS asks to allow notifications from notchmate. Allow it to get a banner when a focus session completes. Denying it only drops the banner; the timer itself is unaffected.
+
 ## Project layout
 
 ```
@@ -123,6 +167,9 @@ notchmate/
   Spotify/        - Spotify AppleScript polling + the now-playing widget
   ClaudeSessions/ - claude-process detection + the session-count widget
   Mochi/          - the reactive mascot (mood model + code-drawn SwiftUI view)
+  Git/            - focused-repo branch/dirty glance (git via Process)
+  Timer/          - Pomodoro focus timer + local-notification on completion
+  SystemStats/    - CPU/memory load via Mach host statistics
 ```
 
 Feature widgets are isolated per folder so future **premium** features (notifications, multi-agent fleet view, themes) can be added as self-contained widgets gated behind a license check, without touching the notch shell. See `AGENTS.md`.
