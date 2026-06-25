@@ -62,6 +62,17 @@ No special entitlement is required: `ps` and `lsof` report on the user's own pro
 The app is sandbox-free (no App Sandbox entitlement), which is what allows it to spawn `ps`/`lsof`; if it were ever sandboxed, process enumeration of other processes would be blocked.
 If process enumeration ever fails it degrades silently to "no sessions".
 
+## Slice 5 (current)
+
+**Settings window** - a preferences window accessible from the menu-bar status item.
+
+- Menu-bar icon (menubar rectangle symbol) with "Settings..." (⌘,) and "Quit notchmate".
+- Settings window: `NavigationSplitView` sidebar with General, Media (stub), HUDs (stub), and About panes.
+- **General pane:** "Show menu-bar icon" toggle (persists in UserDefaults); "Launch at login" toggle (wires `SMAppService.mainApp`).
+- **About pane:** app name, version/build from `Info.plist`, one-line description, link to repo.
+- Stub Media and HUDs panes mark the navigation slots for future work.
+- Shared `NotchPreferences` singleton is the extensible preferences store - later panes add fields there.
+
 ## Slice 4 (current)
 
 The three remaining free-tier widgets that round out v1, each in its own folder beside the others.
@@ -130,9 +141,14 @@ Or open `notchmate.xcodeproj` in Xcode and press Run.
 open build/Build/Products/Release/notchmate.app
 ```
 
-The app has no dock icon or menu bar item (it is an `LSUIElement` agent). It lives entirely in the notch/pill at the top of the screen. To quit, use Activity Monitor or:
+The app shows a small **menu-bar icon** (a menubar rectangle) in the system status bar.
+Click it for a **Settings...** shortcut (⌘,) and **Quit notchmate**.
+The icon can be hidden from the General pane in Settings - use **Settings > General > Show menu-bar icon**.
+
+To quit from the menu-bar icon:
 
 ```sh
+# or use the menu-bar item: click icon → Quit notchmate
 killall notchmate
 ```
 
@@ -166,12 +182,33 @@ Error -1743 (`errAEEventNotPermitted`) is the TCC-denied code.
 
 The first time you press **Start** on the focus timer, macOS asks to allow notifications from notchmate. Allow it to get a banner when a focus session completes. Denying it only drops the banner; the timer itself is unaffected.
 
+## Settings
+
+Open Settings with the menu-bar icon (⌘,) or via the status-bar item.
+
+| Pane    | Controls                                                       |
+|---------|----------------------------------------------------------------|
+| General | Show menu-bar icon toggle; Launch at login (`SMAppService`)    |
+| Media   | Coming soon                                                    |
+| HUDs    | Coming soon                                                    |
+| About   | Version, build, link to this repo                              |
+
+**Show menu-bar icon** persists in `UserDefaults`.
+When hidden, the icon is removed from the system status bar; it can be restored by toggling back on in a Settings window already open.
+
+**Launch at login** calls `SMAppService.mainApp.register()` / `unregister()` (ServiceManagement, macOS 13+).
+No helper target, no third-party dep.
+Registration fails in unsigned builds; the toggle reflects real `SMAppService.mainApp.status` so it will flip back - this is correct behavior.
+
+**Adding a new pane:** add a case to `SettingsPane` in `SettingsView.swift`, add the view file under `Settings/`, add it to the `switch` in `SettingsView`, and add the file to `project.pbxproj` (see `AGENTS.md` for the pbxproj edit pattern).
+
 ## Project layout
 
 ```
 notchmate/
-  App/        - app entry point + AppDelegate (sets up the panel)
+  App/            - app entry point + AppDelegate + StatusBarController
   Notch/          - NSPanel shell, screen/notch geometry, root SwiftUI view
+  Settings/       - preferences store, settings window, all panes
   Spotify/        - Spotify AppleScript polling + the now-playing widget
   ClaudeSessions/ - claude-process detection + the session-count widget
   Mochi/          - the reactive mascot (mood model + code-drawn SwiftUI view)
