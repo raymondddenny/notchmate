@@ -7,6 +7,7 @@ struct ClaudeSession: Equatable, Identifiable {
     let id: Int          // pid
     let dir: String?     // full cwd path (reused by GitController)
     let project: String?
+    let branch: String?  // current git branch in that dir, nil if not a git repo
 }
 
 /// One project with running sessions, for the expanded list.
@@ -84,7 +85,8 @@ final class ClaudeSessionsController: ObservableObject {
         if pids.isEmpty { return [] }
 
         let cwds = resolveCwds(pids)
-        return pids.map { ClaudeSession(id: $0, dir: cwds[$0], project: cwds[$0].map(projectName)) }
+        let branches = resolveBranches(cwds)
+        return pids.map { ClaudeSession(id: $0, dir: cwds[$0], project: cwds[$0].map(projectName), branch: branches[$0]) }
     }
 
     /// True when argv is an interactive `claude` session: argv[0] is the `claude`
@@ -110,6 +112,18 @@ final class ClaudeSessionsController: ObservableObject {
             else if tag == "n", let pid = current { map[pid] = value }
         }
         return map
+    }
+
+    /// pid -> git branch, one subprocess per resolved dir. Detached HEAD and non-git
+    /// dirs return nil (widget omits the branch label rather than showing "HEAD").
+    private static func resolveBranches(_ cwds: [Int: String]) -> [Int: String] {
+        var result: [Int: String] = [:]
+        for (pid, dir) in cwds {
+            guard let raw = run("/usr/bin/git", ["-C", dir, "rev-parse", "--abbrev-ref", "HEAD"]) else { continue }
+            let branch = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !branch.isEmpty && branch != "HEAD" { result[pid] = branch }
+        }
+        return result
     }
 
     private static func projectName(_ path: String) -> String {
