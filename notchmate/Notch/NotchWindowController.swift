@@ -14,6 +14,11 @@ final class NotchWindowController {
     private let stats = SystemStatsController()
     private let isExpanded = CurrentValueSubject<Bool, Never>(false)
     private var cancellables = Set<AnyCancellable>()
+    // Deferred collapse task: absorbs transient mouseExited events that AppKit fires
+    // during frame animation when the tracking area's intermediate bounds briefly
+    // exclude the cursor. Cancelled immediately on the next mouseEntered so the
+    // oscillation loop never starts. Duration > animation duration (0.22s).
+    private var collapseTask: DispatchWorkItem?
 
     /// Layout numbers derived from the screen. Heights/widths are deliberately simple
     /// constants; the only screen-dependent value is the physical notch size.
@@ -53,7 +58,7 @@ final class NotchWindowController {
             hasNotch: geometry.hasNotch,
             topInset: geometry.topInset,
             onHoverChange: { [weak self] hovering in
-                self?.setExpanded(hovering)
+                self?.handleHoverChange(hovering)
             }
         )
         let hosting = NSHostingView(rootView: root)
@@ -100,29 +105,58 @@ final class NotchWindowController {
         return geometry.expandedSize(extraHeight: claudeExtra + gitExtra + timerExtra + statsExtra)
     }
 
+    // MARK: - Hover handling
+
+    /// Defers collapse by 0.25 s to absorb the spurious mouseExited that AppKit fires
+    /// when the panel's tracking area passes through intermediate sizes during the
+    /// expand animation. mouseEntered cancels the deferred work immediately, so real
+    /// hover-exit still collapses promptly after the grace window.
+    private func handleHoverChange(_ hovering: Bool) {
+        collapseTask?.cancel()
+        collapseTask = nil
+        if hovering {
+            setExpanded(true)
+        } else {
+            let task = DispatchWorkItem { [weak self] in self?.setExpanded(false) }
+            collapseTask = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: task)
+        }
+    }
+
     // MARK: - Expand / collapse
 
     private func setExpanded(_ expanded: Bool) {
         guard isExpanded.value != expanded else { return }
         isExpanded.send(expanded)
         let size = expanded ? currentExpandedSize : geometry.collapsedSize
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.22
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            positionPanel(size: size, animated: true)
-        }
+        positionPanel(size: size, animated: true)
     }
 
     /// Place the panel top-centered on its screen. On a notch Mac the top edge is
     /// flush with the screen top (merging with the notch); on a pill Mac we leave a
     /// few points of breathing room so it reads as a floating pill.
+    ///
+    /// Animated path uses `panel.animator().setFrame` inside NSAnimationContext so the
+    /// frame interpolation is driven by Core Animation with the same easeOut curve as
+    /// the SwiftUI content transition. The top edge (originY + height = screen.maxY)
+    /// stays constant throughout interpolation, so the panel always grows downward
+    /// from the notch rather than from the center or bottom.
     private func positionPanel(size: NSSize, animated: Bool = false) {
         let screen = geometry.screenFrame
         let topGap: CGFloat = geometry.hasNotch ? 0 : 4
         let originX = screen.midX - size.width / 2
         let originY = screen.maxY - size.height - topGap
         let frame = NSRect(x: originX, y: originY, width: size.width, height: size.height)
-        panel.setFrame(frame, display: true, animate: animated)
+        if animated {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.22
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                ctx.allowsImplicitAnimation = true
+                panel.animator().setFrame(frame, display: true)
+            }
+        } else {
+            panel.setFrame(frame, display: true, animate: false)
+        }
     }
 
     // MARK: - Screen geometry
