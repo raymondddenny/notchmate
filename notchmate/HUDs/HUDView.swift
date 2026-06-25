@@ -6,14 +6,14 @@ struct HUDView: View {
     let event: HUDEvent
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Theme.sp2) {
             Image(systemName: iconName)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(barColor)
                 .frame(width: 20)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.12))
+                    Capsule().fill(Theme.trackBackground)
                     Capsule()
                         .fill(barColor)
                         .frame(width: geo.size.width * CGFloat(clampedLevel))
@@ -24,7 +24,7 @@ struct HUDView: View {
             Text(pctString)
                 .font(.system(size: 11, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(Theme.textPrimary.opacity(0.85))
                 .frame(width: 36, alignment: .trailing)
         }
     }

@@ -21,14 +21,12 @@ struct NotchView: View {
     var body: some View {
         ZStack(alignment: .top) {
             background
-            // Reserve the physical notch region on notch Macs, then lay out content
-            // beneath it. On pill Macs topInset is 0.
             VStack(spacing: 0) {
                 Color.clear.frame(height: topInset)
                 content
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 10)
-                    .padding(.top, hasNotch ? 2 : 8)
+                    .padding(.horizontal, Theme.panelPadH)
+                    .padding(.bottom, Theme.panelPadBottom)
+                    .padding(.top, hasNotch ? 2 : Theme.sp2)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -40,13 +38,12 @@ struct NotchView: View {
         .animation(.easeOut(duration: 0.22), value: hovering)
     }
 
-    // Each widget owns its own collapsed/expanded rendering; the shell only chooses
-    // the container. Collapsed: a single strip (Claude count trails the media glance).
-    // Expanded: stacked blocks. Widgets render nothing when they have no content.
+    // Collapsed: a single glanceable strip. Expanded: stacked widget blocks.
+    // Widgets render nothing when they have no content, so absent state is free.
     @ViewBuilder
     private var content: some View {
         if hovering {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: Theme.sectionSpacing) {
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
                     MochiView(media: media, claude: claude, expanded: true)
@@ -70,14 +67,13 @@ struct NotchView: View {
                 SystemStatsWidget(stats: stats, expanded: true)
             }
         } else {
-            // Collapsed strip: HUD event takes priority for ~1.5s; otherwise the
-            // normal widget chips. Animated crossfade between the two states.
+            // Collapsed strip: HUD event takes priority for ~1.5s; otherwise widget chips.
             Group {
                 if let event = hud.currentEvent {
                     HUDView(event: event)
                         .transition(.opacity)
                 } else {
-                    HStack(spacing: 10) {
+                    HStack(spacing: Theme.sp2) {
                         MochiView(media: media, claude: claude, expanded: false)
                         MediaWidget(media: media, expanded: false)
                         FocusTimerWidget(timer: focus, expanded: false)
@@ -93,12 +89,10 @@ struct NotchView: View {
     }
 
     private var divider: some View {
-        Divider().overlay(Color.white.opacity(0.1))
+        Divider().overlay(Theme.dividerColor)
     }
 
     private var background: some View {
-        // Bottom corners always rounded. Top corners rounded only on pill Macs;
-        // on notch Macs the top edge stays square to merge with the screen edge.
         let topRadius: CGFloat = hasNotch ? 0 : 14
         return UnevenRoundedRectangle(
             topLeadingRadius: topRadius,

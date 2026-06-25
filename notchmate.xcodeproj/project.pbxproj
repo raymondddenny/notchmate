@@ -37,6 +37,7 @@
 		2222222222222222222222E2 /* LyricsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111D2 /* LyricsWidget.swift */; };
 		2222222222222222222222F1 /* HUDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111E1 /* HUDController.swift */; };
 		2222222222222222222222F2 /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111E2 /* HUDView.swift */; };
+		2222222222222222222222FC /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111F2 /* Theme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -71,6 +72,7 @@
 		1111111111111111111111D2 /* LyricsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lyrics/LyricsWidget.swift; sourceTree = "<group>"; };
 		1111111111111111111111E1 /* HUDController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDs/HUDController.swift; sourceTree = "<group>"; };
 		1111111111111111111111E2 /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDs/HUDView.swift; sourceTree = "<group>"; };
+		1111111111111111111111F2 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		1111111111111111111111C2 /* notchmate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = notchmate.entitlements; sourceTree = "<group>"; };
 		3333333333333333333333C1 /* notchmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = notchmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -127,6 +129,7 @@
 				1111111111111111111111D2 /* LyricsWidget.swift */,
 				1111111111111111111111E1 /* HUDController.swift */,
 				1111111111111111111111E2 /* HUDView.swift */,
+				1111111111111111111111F2 /* Theme.swift */,
 				1111111111111111111111C2 /* notchmate.entitlements */,
 				1111111111111111111111A7 /* Info.plist */,
 			);
@@ -239,6 +242,7 @@
 				2222222222222222222222E2 /* LyricsWidget.swift in Sources */,
 				2222222222222222222222F1 /* HUDController.swift in Sources */,
 				2222222222222222222222F2 /* HUDView.swift in Sources */,
+				2222222222222222222222FC /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
