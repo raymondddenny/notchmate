@@ -23,6 +23,14 @@
 		2222222222222222222222BE /* FocusTimerWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AF /* FocusTimerWidget.swift */; };
 		2222222222222222222222BF /* SystemStatsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AG /* SystemStatsController.swift */; };
 		2222222222222222222222BG /* SystemStatsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AH /* SystemStatsWidget.swift */; };
+		2222222222222222222222C1 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B1 /* StatusBarController.swift */; };
+		2222222222222222222222C2 /* NotchPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B2 /* NotchPreferences.swift */; };
+		2222222222222222222222C3 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B3 /* SettingsWindowController.swift */; };
+		2222222222222222222222C4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B4 /* SettingsView.swift */; };
+		2222222222222222222222C5 /* GeneralPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B5 /* GeneralPane.swift */; };
+		2222222222222222222222C6 /* AboutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B6 /* AboutPane.swift */; };
+		2222222222222222222222C7 /* MediaPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B7 /* MediaPane.swift */; };
+		2222222222222222222222C8 /* HUDsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B8 /* HUDsPane.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +51,14 @@
 		1111111111111111111111AF /* FocusTimerWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timer/FocusTimerWidget.swift; sourceTree = "<group>"; };
 		1111111111111111111111AG /* SystemStatsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemStats/SystemStatsController.swift; sourceTree = "<group>"; };
 		1111111111111111111111AH /* SystemStatsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemStats/SystemStatsWidget.swift; sourceTree = "<group>"; };
+		1111111111111111111111B1 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/StatusBarController.swift; sourceTree = "<group>"; };
+		1111111111111111111111B2 /* NotchPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/NotchPreferences.swift; sourceTree = "<group>"; };
+		1111111111111111111111B3 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/SettingsWindowController.swift; sourceTree = "<group>"; };
+		1111111111111111111111B4 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/SettingsView.swift; sourceTree = "<group>"; };
+		1111111111111111111111B5 /* GeneralPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/GeneralPane.swift; sourceTree = "<group>"; };
+		1111111111111111111111B6 /* AboutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/AboutPane.swift; sourceTree = "<group>"; };
+		1111111111111111111111B7 /* MediaPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/MediaPane.swift; sourceTree = "<group>"; };
+		1111111111111111111111B8 /* HUDsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/HUDsPane.swift; sourceTree = "<group>"; };
 		3333333333333333333333C1 /* notchmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = notchmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -84,6 +100,14 @@
 				1111111111111111111111AF /* FocusTimerWidget.swift */,
 				1111111111111111111111AG /* SystemStatsController.swift */,
 				1111111111111111111111AH /* SystemStatsWidget.swift */,
+				1111111111111111111111B1 /* StatusBarController.swift */,
+				1111111111111111111111B2 /* NotchPreferences.swift */,
+				1111111111111111111111B3 /* SettingsWindowController.swift */,
+				1111111111111111111111B4 /* SettingsView.swift */,
+				1111111111111111111111B5 /* GeneralPane.swift */,
+				1111111111111111111111B6 /* AboutPane.swift */,
+				1111111111111111111111B7 /* MediaPane.swift */,
+				1111111111111111111111B8 /* HUDsPane.swift */,
 				1111111111111111111111A7 /* Info.plist */,
 			);
 			path = notchmate;
@@ -181,6 +205,14 @@
 				2222222222222222222222BE /* FocusTimerWidget.swift in Sources */,
 				2222222222222222222222BF /* SystemStatsController.swift in Sources */,
 				2222222222222222222222BG /* SystemStatsWidget.swift in Sources */,
+				2222222222222222222222C1 /* StatusBarController.swift in Sources */,
+				2222222222222222222222C2 /* NotchPreferences.swift in Sources */,
+				2222222222222222222222C3 /* SettingsWindowController.swift in Sources */,
+				2222222222222222222222C4 /* SettingsView.swift in Sources */,
+				2222222222222222222222C5 /* GeneralPane.swift in Sources */,
+				2222222222222222222222C6 /* AboutPane.swift in Sources */,
+				2222222222222222222222C7 /* MediaPane.swift in Sources */,
+				2222222222222222222222C8 /* HUDsPane.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

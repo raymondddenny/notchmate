@@ -12,7 +12,9 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 
 ## Architecture
 
-- `App/` - `@main` App + AppDelegate; AppDelegate sets activation policy `.accessory` and owns one `NotchWindowController`.
+- `App/` - `@main` App + AppDelegate; AppDelegate sets activation policy `.accessory` and owns one `NotchWindowController`, `SettingsWindowController`, and `StatusBarController`.
+- `Settings/` - `NotchPreferences` (shared `ObservableObject` preferences store, `@Published` fields backed by `UserDefaults`; `launchAtLogin` reads/writes `SMAppService.mainApp`), `SettingsWindowController` (creates/reuses an `NSWindow` hosting `SettingsView` on demand, activates the app on show), `SettingsView` (`NavigationSplitView` sidebar with `SettingsPane` enum rows), `GeneralPane` (show menu-bar icon toggle + launch at login via `SMAppService`), `AboutPane` (version/build from Bundle, link to repo), `MediaPane`/`HUDsPane` (stubs for future panes). Free-tier, no license gate.
+- `App/StatusBarController.swift` - owns `NSStatusItem`; subscribes to `NotchPreferences.$showMenuBarIcon` and installs/removes the item reactively; menu provides "Settings..." and "Quit notchmate".
 - `Notch/` - `NotchPanel` (borderless non-activating NSPanel at `.statusBar` level), `NotchWindowController` (screen/notch geometry + collapsed/expanded resize), `NotchView` (root SwiftUI, hover -> expand).
 - `Spotify/` - `SpotifyController` (ObservableObject; AppleScript poll + transport) and `SpotifyWidget` (collapsed/expanded/idle SwiftUI).
 - `ClaudeSessions/` - `ClaudeSessionsController` (ObservableObject; polls live `claude` processes off-main, publishes `[ClaudeSession]` + a project grouping) and `ClaudeSessionsWidget` (collapsed count glyph / expanded per-project list; renders nothing at zero). Free-tier, no license gate.
@@ -62,3 +64,12 @@ It only checks `terminationStatus == 0` per call - no error spam.
 Authorization is requested lazily on first Start; denial is ignored (countdown still works).
 For local **unsigned** builds the banner may not appear until the app is signed/trusted - the timer logic is unaffected.
 No Info.plist key is required for local notifications.
+- **Settings window:** open via the menu-bar status item ("Settings...") or the Quit entry.
+`SettingsWindowController` is created once by `AppDelegate` and shared with `StatusBarController`.
+The window is an `NSWindow` (`isReleasedWhenClosed = false`) so it survives close; `show()` calls `NSApp.activate(ignoringOtherApps: true)` to bring it forward in the LSUIElement activation model.
+- **Extensible preferences store - `NotchPreferences`:** a singleton `ObservableObject` in `Settings/NotchPreferences.swift`.
+Add new preference fields as `@Published var foo: T` with `didSet { UserDefaults.standard.set(...) }` + a `init` read.
+Bind them in any pane view with `@ObservedObject private var prefs = NotchPreferences.shared`.
+The `launchAtLogin` property is intentionally computed (no backing `@Published`) - it reads the real `SMAppService.mainApp.status` and calls `register()`/`unregister()`; errors are logged via `NSLog` and the toggle reflects true state.
+- **SMAppService.mainApp in unsigned builds:** `register()` throws in unsigned/headless builds; the toggle will flip back immediately because the `get` reflects real state.
+This is correct behavior - do not fake a persisted bool for this toggle.
