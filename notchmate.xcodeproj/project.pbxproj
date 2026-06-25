@@ -1,0 +1,253 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2222222222222222222222B1 /* NotchmateApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A1 /* NotchmateApp.swift */; };
+		2222222222222222222222B2 /* NotchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A2 /* NotchPanel.swift */; };
+		2222222222222222222222B3 /* NotchWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A3 /* NotchWindowController.swift */; };
+		2222222222222222222222B4 /* NotchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A4 /* NotchView.swift */; };
+		2222222222222222222222B5 /* SpotifyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A5 /* SpotifyController.swift */; };
+		2222222222222222222222B6 /* SpotifyWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A6 /* SpotifyWidget.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1111111111111111111111A1 /* NotchmateApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/NotchmateApp.swift; sourceTree = "<group>"; };
+		1111111111111111111111A2 /* NotchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchPanel.swift; sourceTree = "<group>"; };
+		1111111111111111111111A3 /* NotchWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchWindowController.swift; sourceTree = "<group>"; };
+		1111111111111111111111A4 /* NotchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchView.swift; sourceTree = "<group>"; };
+		1111111111111111111111A5 /* SpotifyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spotify/SpotifyController.swift; sourceTree = "<group>"; };
+		1111111111111111111111A6 /* SpotifyWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spotify/SpotifyWidget.swift; sourceTree = "<group>"; };
+		1111111111111111111111A7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3333333333333333333333C1 /* notchmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = notchmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6666666666666666666666F2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4444444444444444444444D1 = {
+			isa = PBXGroup;
+			children = (
+				4444444444444444444444D2 /* notchmate */,
+				4444444444444444444444D3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4444444444444444444444D2 /* notchmate */ = {
+			isa = PBXGroup;
+			children = (
+				1111111111111111111111A1 /* NotchmateApp.swift */,
+				1111111111111111111111A2 /* NotchPanel.swift */,
+				1111111111111111111111A3 /* NotchWindowController.swift */,
+				1111111111111111111111A4 /* NotchView.swift */,
+				1111111111111111111111A5 /* SpotifyController.swift */,
+				1111111111111111111111A6 /* SpotifyWidget.swift */,
+				1111111111111111111111A7 /* Info.plist */,
+			);
+			path = notchmate;
+			sourceTree = "<group>";
+		};
+		4444444444444444444444D3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3333333333333333333333C1 /* notchmate.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5555555555555555555555E1 /* notchmate */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7777777777777777777777G2 /* Build configuration list for PBXNativeTarget "notchmate" */;
+			buildPhases = (
+				6666666666666666666666F1 /* Sources */,
+				6666666666666666666666F2 /* Frameworks */,
+				6666666666666666666666F3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = notchmate;
+			productName = notchmate;
+			productReference = 3333333333333333333333C1 /* notchmate.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5555555555555555555555E2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					5555555555555555555555E1 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = 7777777777777777777777G1 /* Build configuration list for PBXProject "notchmate" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 4444444444444444444444D1;
+			productRefGroup = 4444444444444444444444D3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5555555555555555555555E1 /* notchmate */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6666666666666666666666F3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6666666666666666666666F1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2222222222222222222222B1 /* NotchmateApp.swift in Sources */,
+				2222222222222222222222B2 /* NotchPanel.swift in Sources */,
+				2222222222222222222222B3 /* NotchWindowController.swift in Sources */,
+				2222222222222222222222B4 /* NotchView.swift in Sources */,
+				2222222222222222222222B5 /* SpotifyController.swift in Sources */,
+				2222222222222222222222B6 /* SpotifyWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		8888888888888888888888H1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		8888888888888888888888H2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		8888888888888888888888H3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = notchmate/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchmate.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		8888888888888888888888H4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = notchmate/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchmate.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7777777777777777777777G1 /* Build configuration list for PBXProject "notchmate" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8888888888888888888888H1 /* Debug */,
+				8888888888888888888888H2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7777777777777777777777G2 /* Build configuration list for PBXNativeTarget "notchmate" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8888888888888888888888H3 /* Debug */,
+				8888888888888888888888H4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5555555555555555555555E2 /* Project object */;
+}
