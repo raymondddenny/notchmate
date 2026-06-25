@@ -57,7 +57,7 @@ final class NotchPreferences: ObservableObject {
            let src = MediaSource(rawValue: raw) {
             mediaSource = src
         } else {
-            mediaSource = .spotify
+            mediaSource = .spotifyWeb
         }
 
         if let raw = UserDefaults.standard.string(forKey: "musicLayout"),

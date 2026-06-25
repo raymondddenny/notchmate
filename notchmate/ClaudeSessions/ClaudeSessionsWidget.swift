@@ -7,8 +7,6 @@ struct ClaudeSessionsWidget: View {
     @ObservedObject var sessions: ClaudeSessionsController
     let expanded: Bool
 
-    private static let accent = Color(red: 0.85, green: 0.52, blue: 0.30) // Claude warm orange
-
     var body: some View {
         Group {
             if sessions.count > 0 {
@@ -23,12 +21,12 @@ struct ClaudeSessionsWidget: View {
     // MARK: - Collapsed
 
     private var collapsedView: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: Theme.sp1 + 1) {
             Image(systemName: "sparkles")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Self.accent)
+                .foregroundStyle(Theme.accentClaude)
             Text("\(sessions.count)")
-                .font(.system(size: 12, weight: .semibold))
+                .font(Theme.chipMonoFont)
                 .monospacedDigit()
         }
     }
@@ -36,30 +34,30 @@ struct ClaudeSessionsWidget: View {
     // MARK: - Expanded
 
     private var expandedView: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.sp1 + 2) {
+            HStack(spacing: Theme.sp1 + 2) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Self.accent)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.accentClaude)
                 Text("\(sessions.count) Claude session\(sessions.count == 1 ? "" : "s")")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(Theme.primaryFont)
                 Spacer(minLength: 0)
             }
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: Theme.sp1 - 1) {
                 ForEach(Array(sessions.sessions.prefix(3))) { session in
-                    HStack(spacing: 6) {
+                    HStack(spacing: Theme.sp1 + 2) {
                         Circle()
-                            .fill(Self.accent)
-                            .frame(width: 5, height: 5)
+                            .fill(Theme.accentClaude)
+                            .frame(width: 4, height: 4)
                         Text(session.project ?? "session")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.85))
+                            .foregroundStyle(Theme.textPrimary.opacity(0.85))
                             .lineLimit(1)
                             .truncationMode(.middle)
                         if let branch = session.branch {
                             Text(branch)
                                 .font(.system(size: 11).monospaced())
-                                .foregroundStyle(Self.accent.opacity(0.7))
+                                .foregroundStyle(Theme.accentClaude.opacity(0.7))
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                         }
@@ -68,9 +66,9 @@ struct ClaudeSessionsWidget: View {
                 }
                 if sessions.count > 3 {
                     Text("+\(sessions.count - 3) more")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.5))
-                        .padding(.leading, 11)
+                        .font(Theme.secondaryFont)
+                        .foregroundStyle(Theme.textTertiary)
+                        .padding(.leading, Theme.sp3 - 2)
                 }
             }
         }

@@ -3,7 +3,6 @@ import SwiftUI
 // MARK: - Equalizer animation
 
 /// Four animated bars that bounce when playing, hold still when paused/idle.
-/// Pure SwiftUI + TimelineView — zero assets, zero deps.
 private struct EqualizerBars: View {
     let isPlaying: Bool
 
@@ -59,12 +58,12 @@ struct MediaWidget: View {
     // MARK: - Collapsed
 
     private func collapsedView(_ np: NowPlaying) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Theme.sp2) {
             if prefs.musicLayout == .artwork {
                 artworkThumb(size: 24, corner: 5)
             }
             Text(np.artist.isEmpty ? np.title : "\(np.artist) - \(np.title)")
-                .font(.system(size: 12, weight: .medium))
+                .font(Theme.chipFont)
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 4)
@@ -75,16 +74,15 @@ struct MediaWidget: View {
     // MARK: - Expanded
 
     private func expandedView(_ np: NowPlaying) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Theme.sp2) {
             if prefs.musicLayout == .artwork {
-                HStack(spacing: 12) {
-                    artworkThumb(size: 64, corner: 8)
+                HStack(spacing: Theme.sp3) {
+                    artworkThumb(size: 56, corner: 8)
                     trackInfo(np)
                     Spacer(minLength: 0)
                 }
             } else {
-                // Compact: inline animation + text, no artwork block
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.sp2) {
                     EqualizerBars(isPlaying: np.isPlaying)
                     trackInfo(np)
                     Spacer(minLength: 0)
@@ -95,38 +93,38 @@ struct MediaWidget: View {
     }
 
     private func trackInfo(_ np: NowPlaying) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Theme.sp1) {
             Text(np.title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(Theme.primaryFont)
                 .lineLimit(1)
             if !np.artist.isEmpty {
                 Text(np.artist)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .font(Theme.secondaryFont)
+                    .foregroundStyle(Theme.textSecondary)
                     .lineLimit(1)
             }
             if !np.album.isEmpty {
                 Text(np.album)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .font(Theme.secondaryFont)
+                    .foregroundStyle(Theme.textTertiary)
                     .lineLimit(1)
             }
         }
     }
 
     private func controls(_ np: NowPlaying) -> some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 28) {
+        VStack(spacing: Theme.sp1) {
+            HStack(spacing: 20) {
                 controlButton("backward.fill") { media.previous() }
-                controlButton(np.isPlaying ? "pause.fill" : "play.fill", size: 22) { media.playPause() }
+                controlButton(np.isPlaying ? "pause.fill" : "play.fill", size: 20) { media.playPause() }
                 controlButton("forward.fill") { media.next() }
             }
             .disabled(premiumControlsDisabled)
             .opacity(premiumControlsDisabled ? 0.3 : 1)
             if premiumControlsDisabled {
                 Text("Spotify Premium required for controls")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.45))
+                    .font(Theme.captionFont)
+                    .foregroundStyle(Theme.textTertiary)
             }
         }
     }
@@ -135,12 +133,13 @@ struct MediaWidget: View {
         prefs.mediaSource == .spotifyWeb && spotifyWeb.premiumRequired
     }
 
-    private func controlButton(_ name: String, size: CGFloat = 16, action: @escaping () -> Void) -> some View {
+    private func controlButton(_ name: String, size: CGFloat = 15, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: name)
                 .font(.system(size: size, weight: .semibold))
                 .foregroundStyle(.white)
                 .contentShape(Rectangle())
+                .frame(width: 32, height: 28)
         }
         .buttonStyle(.plain)
     }
@@ -150,54 +149,100 @@ struct MediaWidget: View {
     @ViewBuilder
     private var idleView: some View {
         if media.permissionDenied && prefs.mediaSource == .spotify {
+            // AppleScript TCC denied - surface a clear action.
             Button(action: { media.openSpotifySettings() }) {
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.sp2) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(.orange.opacity(0.85))
-                    Text("Allow Spotify access")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .lineLimit(1)
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Spotify access denied")
+                            .font(Theme.chipFont)
+                        Text("Tap to open Privacy & Security")
+                            .font(Theme.captionFont)
+                            .foregroundStyle(Theme.textTertiary)
+                    }
                     Spacer(minLength: 0)
                 }
             }
             .buttonStyle(.plain)
             .help("Opens Privacy & Security > Automation so you can grant notchmate access to Spotify")
         } else if prefs.mediaSource == .spotifyWeb, case .disconnected = spotifyWeb.authState {
+            // Web API not yet connected - prominent call-to-action.
+            if expanded {
+                VStack(spacing: Theme.sp2) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(Theme.textTertiary)
+                    Text("Connect Spotify to see what's playing")
+                        .font(Theme.secondaryFont)
+                        .foregroundStyle(Theme.textSecondary)
+                        .multilineTextAlignment(.center)
+                    Button(action: { spotifyWeb.connect() }) {
+                        Text("Connect Spotify")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, Theme.sp3)
+                            .padding(.vertical, Theme.sp1 + 2)
+                            .background(Capsule().fill(.white))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Opens the Spotify authorization page in your browser")
+                }
+                .frame(maxWidth: .infinity)
+            } else {
+                Button(action: { spotifyWeb.connect() }) {
+                    HStack(spacing: Theme.sp2) {
+                        Image(systemName: "link")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.green.opacity(0.85))
+                        Text("Connect Spotify")
+                            .font(Theme.chipFont)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                }
+                .buttonStyle(.plain)
+                .help("Opens the Spotify authorization page in your browser")
+            }
+        } else if prefs.mediaSource == .spotifyWeb, case .connecting = spotifyWeb.authState {
+            HStack(spacing: Theme.sp2) {
+                ProgressView()
+                    .controlSize(.small)
+                    .colorScheme(.dark)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Connecting\u{2026}")
+                        .font(Theme.chipFont)
+                    if expanded {
+                        Text("Waiting for browser sign-in")
+                            .font(Theme.captionFont)
+                            .foregroundStyle(Theme.textTertiary)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(Theme.textSecondary)
+        } else if prefs.mediaSource == .spotifyWeb, case .error(let msg) = spotifyWeb.authState {
             Button(action: { spotifyWeb.connect() }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "link")
+                HStack(spacing: Theme.sp2) {
+                    Image(systemName: "exclamationmark.circle")
                         .font(.system(size: 12))
-                        .foregroundStyle(.green.opacity(0.85))
-                    Text("Connect Spotify")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.85))
+                        .foregroundStyle(.red.opacity(0.85))
+                    Text(expanded ? msg : "Connection error - tap to retry")
+                        .font(Theme.chipFont)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                 }
             }
             .buttonStyle(.plain)
-            .help("Opens the Spotify authorization page in your browser")
-        } else if prefs.mediaSource == .spotifyWeb, case .connecting = spotifyWeb.authState {
-            HStack(spacing: 8) {
-                ProgressView()
-                    .controlSize(.small)
-                    .colorScheme(.dark)
-                Text("Connecting\u{2026}")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.5))
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-            }
         } else {
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.sp2) {
                 Image(systemName: "music.note")
                     .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Theme.textTertiary)
                 Text("Nothing playing")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .font(Theme.chipFont)
+                    .foregroundStyle(Theme.textTertiary)
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
@@ -217,12 +262,12 @@ struct MediaWidget: View {
                 .clipShape(shape)
         } else {
             shape
-                .fill(Color.white.opacity(0.12))
+                .fill(Theme.trackBackground)
                 .frame(width: size, height: size)
                 .overlay(
                     Image(systemName: "music.note")
-                        .font(.system(size: size * 0.4))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .font(.system(size: size * 0.35))
+                        .foregroundStyle(Theme.textTertiary)
                 )
         }
     }

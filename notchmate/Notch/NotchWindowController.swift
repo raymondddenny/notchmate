@@ -35,10 +35,10 @@ final class NotchWindowController {
             // Wide enough to flank the notch with a glanceable strip beneath it.
             NSSize(width: max(notchWidth + 160, 260), height: notchHeight + 36)
         }
-        /// Base expanded size (Spotify block only). Per-feature additions are layered
+        /// Base expanded size (Mochi + media block). Per-feature additions are layered
         /// on by the controller so the geometry math stays feature-agnostic.
         func expandedSize(extraHeight: CGFloat) -> NSSize {
-            NSSize(width: 380, height: notchHeight + 168 + extraHeight)
+            NSSize(width: 380, height: notchHeight + 152 + extraHeight)
         }
         /// Top inset before content starts (reserves the physical notch region).
         var topInset: CGFloat { notchHeight }
@@ -106,9 +106,9 @@ final class NotchWindowController {
     private var currentExpandedSize: NSSize {
         let rows = min(claude.count, 3) + (claude.count > 3 ? 1 : 0)
         let claudeExtra: CGFloat = claude.count > 0 ? CGFloat(34 + rows * 18) : 0
-        let gitExtra: CGFloat = git.state != nil ? 46 : 0
-        let timerExtra: CGFloat = 56
-        let statsExtra: CGFloat = 56
+        let gitExtra: CGFloat = git.state != nil ? 42 : 0
+        let timerExtra: CGFloat = 48
+        let statsExtra: CGFloat = 44
         let prefs = NotchPreferences.shared
         // Lyrics block: 5 visible lines at ~18px + spacing, only when a track is loaded.
         let lyricsExtra: CGFloat = prefs.showLyrics && lyrics.state.isPresent ? 108 : 0

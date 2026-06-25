@@ -7,8 +7,6 @@ struct FocusTimerWidget: View {
     @ObservedObject var timer: FocusTimerController
     let expanded: Bool
 
-    private static let accent = Color(red: 0.95, green: 0.45, blue: 0.45) // tomato
-
     var body: some View {
         Group {
             if expanded {
@@ -25,12 +23,12 @@ struct FocusTimerWidget: View {
     // MARK: - Collapsed
 
     private var collapsedView: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: Theme.sp1 + 1) {
             Image(systemName: "timer")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Self.accent)
+                .foregroundStyle(Theme.accentTimer)
             Text(timer.display)
-                .font(.system(size: 12, weight: .semibold))
+                .font(Theme.chipMonoFont)
                 .monospacedDigit()
                 .opacity(timer.phase == .paused ? 0.55 : 1)
         }
@@ -39,18 +37,18 @@ struct FocusTimerWidget: View {
     // MARK: - Expanded
 
     private var expandedView: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 1) {
+        HStack(spacing: Theme.sp3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("Focus")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .font(Theme.labelFont)
+                    .foregroundStyle(Theme.textSecondary)
                 Text(timer.display)
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .monospacedDigit()
                     .opacity(timer.phase == .paused ? 0.55 : 1)
             }
             Spacer(minLength: 0)
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.sp2) {
                 pill(timer.phase == .running ? "Pause" : "Start",
                      filled: true) { timer.startOrPause() }
                 pill("Reset", filled: false) { timer.reset() }
@@ -64,10 +62,10 @@ struct FocusTimerWidget: View {
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(filled ? Color.black : .white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, Theme.sp3)
+                .padding(.vertical, Theme.sp1 + 1)
                 .background(
-                    Capsule().fill(filled ? Self.accent : Color.white.opacity(0.12))
+                    Capsule().fill(filled ? Theme.accentTimer : Theme.trackBackground)
                 )
                 .contentShape(Capsule())
         }

@@ -7,9 +7,6 @@ struct SystemStatsWidget: View {
     @ObservedObject var stats: SystemStatsController
     let expanded: Bool
 
-    private static let cpuColor = Color(red: 0.95, green: 0.55, blue: 0.35) // warm
-    private static let memColor = Color(red: 0.55, green: 0.70, blue: 0.95) // cool
-
     var body: some View {
         Group {
             if expanded {
@@ -26,12 +23,12 @@ struct SystemStatsWidget: View {
     // MARK: - Collapsed (only under load)
 
     private var collapsedView: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: Theme.sp1 + 1) {
             Image(systemName: "flame.fill")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Self.cpuColor)
+                .foregroundStyle(Theme.accentCPU)
             Text(pct(stats.sample.cpu))
-                .font(.system(size: 12, weight: .semibold))
+                .font(Theme.chipMonoFont)
                 .monospacedDigit()
         }
     }
@@ -39,28 +36,28 @@ struct SystemStatsWidget: View {
     // MARK: - Expanded
 
     private var expandedView: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            statRow(label: "CPU", icon: "cpu", value: stats.sample.cpu, color: Self.cpuColor)
-            statRow(label: "MEM", icon: "memorychip", value: stats.sample.memUsed, color: Self.memColor)
+        VStack(alignment: .leading, spacing: Theme.sp1 + 1) {
+            statRow(label: "CPU", icon: "cpu", value: stats.sample.cpu, color: Theme.accentCPU)
+            statRow(label: "MEM", icon: "memorychip", value: stats.sample.memUsed, color: Theme.accentMem)
         }
     }
 
     private func statRow(label: String, icon: String, value: Double, color: Color) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Theme.sp2) {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(color)
-                .frame(width: 16)
+                .frame(width: 14)
             Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.6))
-                .frame(width: 30, alignment: .leading)
+                .font(Theme.labelFont)
+                .foregroundStyle(Theme.textSecondary)
+                .frame(width: 28, alignment: .leading)
             bar(value: value, color: color)
             Text(pct(value))
                 .font(.system(size: 11, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.85))
-                .frame(width: 38, alignment: .trailing)
+                .foregroundStyle(Theme.textPrimary.opacity(0.85))
+                .frame(width: 36, alignment: .trailing)
         }
     }
 
@@ -69,7 +66,7 @@ struct SystemStatsWidget: View {
         return GeometryReader { geo in
             let fullWidth = geo.size.width
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.12))
+                Capsule().fill(Theme.trackBackground)
                 Capsule().fill(color.opacity(0.9)).frame(width: fullWidth * fraction)
             }
         }
