@@ -39,6 +39,7 @@
 		2222222222222222222222F1 /* HUDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111E1 /* HUDController.swift */; };
 		2222222222222222222222F2 /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111E2 /* HUDView.swift */; };
 		2222222222222222222222FC /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111F2 /* Theme.swift */; };
+		FAFA000000000000000001B1 /* FocusStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAFA000000000000000001A1 /* FocusStatsView.swift */; };
 		DCDC000000000000000000B1 /* DuckyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A1 /* DuckyView.swift */; };
 		DCDC000000000000000000B2 /* MascotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A2 /* MascotView.swift */; };
 		DCDC000000000000000000B3 /* MascotPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A3 /* MascotPane.swift */; };
@@ -81,6 +82,7 @@
 		1111111111111111111111E2 /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDs/HUDView.swift; sourceTree = "<group>"; };
 		1111111111111111111111F2 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		1111111111111111111111C2 /* notchmate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = notchmate.entitlements; sourceTree = "<group>"; };
+		FAFA000000000000000001A1 /* FocusStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timer/FocusStatsView.swift; sourceTree = "<group>"; };
 		DCDC000000000000000000A1 /* DuckyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/DuckyView.swift; sourceTree = "<group>"; };
 		DCDC000000000000000000A2 /* MascotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MascotView.swift; sourceTree = "<group>"; };
 		DCDC000000000000000000A3 /* MascotPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/MascotPane.swift; sourceTree = "<group>"; };
@@ -126,6 +128,7 @@
 				1111111111111111111111AD /* GitWidget.swift */,
 				1111111111111111111111AE /* FocusTimerController.swift */,
 				1111111111111111111111AF /* FocusTimerWidget.swift */,
+				FAFA000000000000000001A1 /* FocusStatsView.swift */,
 				1111111111111111111111AG /* SystemStatsController.swift */,
 				1111111111111111111111AH /* SystemStatsWidget.swift */,
 				1111111111111111111111B1 /* StatusBarController.swift */,
@@ -247,6 +250,7 @@
 				2222222222222222222222BC /* GitWidget.swift in Sources */,
 				2222222222222222222222BD /* FocusTimerController.swift in Sources */,
 				2222222222222222222222BE /* FocusTimerWidget.swift in Sources */,
+				FAFA000000000000000001B1 /* FocusStatsView.swift in Sources */,
 				2222222222222222222222BF /* SystemStatsController.swift in Sources */,
 				2222222222222222222222BG /* SystemStatsWidget.swift in Sources */,
 				2222222222222222222222C1 /* StatusBarController.swift in Sources */,
