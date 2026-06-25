@@ -85,10 +85,12 @@ struct SpotifyWidget: View {
 
     private var idleView: some View {
         HStack(spacing: 8) {
-            Image(systemName: "music.note")
+            Image(systemName: spotify.permissionDenied ? "lock.fill" : "music.note")
                 .font(.system(size: 12))
                 .foregroundStyle(.white.opacity(0.5))
-            Text("Nothing playing")
+            Text(spotify.permissionDenied
+                 ? "Allow Spotify access in System Settings"
+                 : "Nothing playing")
                 .font(.system(size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .lineLimit(1)
