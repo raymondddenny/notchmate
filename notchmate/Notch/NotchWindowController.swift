@@ -7,6 +7,7 @@ import Combine
 /// UI toggles between collapsed and expanded.
 final class NotchWindowController {
     private let panel: NotchPanel
+    private var hudPanel: NSPanel?
     private let media = MediaController()
     private let claude = ClaudeSessionsController()
     private let git: GitController
@@ -70,7 +71,6 @@ final class NotchWindowController {
             focus: focus,
             stats: stats,
             lyrics: lyrics,
-            hud: hud,
             hasNotch: geometry.hasNotch,
             topInset: geometry.topInset,
             onHoverChange: { [weak self] hovering in
@@ -82,6 +82,7 @@ final class NotchWindowController {
         panel.contentView = hosting
 
         positionPanel(size: geometry.collapsedSize)
+        setupHUDPanel()
 
         // Re-fit the panel when layout preferences change (row count, enabled modules,
         // module order) so the size always matches the grid content.
@@ -96,10 +97,24 @@ final class NotchWindowController {
                 self.positionPanel(size: self.currentExpandedSize, animated: true)
             }
             .store(in: &cancellables)
+
+        // Show/fade the HUD panel below the notch when a HUD event fires.
+        hud.$currentEvent
+            .receive(on: RunLoop.main)
+            .sink { [weak self] event in
+                guard let self else { return }
+                if event != nil { self.positionHUDPanel() }
+                NSAnimationContext.runAnimationGroup { ctx in
+                    ctx.duration = event != nil ? 0.15 : 0.3
+                    self.hudPanel?.animator().alphaValue = event != nil ? 1 : 0
+                }
+            }
+            .store(in: &cancellables)
     }
 
     func show() {
         panel.orderFrontRegardless()
+        hudPanel?.orderFrontRegardless()
         media.start()
         claude.start()
         git.start()
@@ -168,6 +183,55 @@ final class NotchWindowController {
         } else {
             panel.setFrame(frame, display: true, animate: false)
         }
+    }
+
+    // MARK: - HUD overlay panel
+
+    /// Creates the floating HUD panel (borderless, non-activating, mouse-events ignored).
+    /// The panel is always ordered-front after show(); its alphaValue drives visibility.
+    private func setupHUDPanel() {
+        let hudWidth: CGFloat = 220
+        let hudHeight: CGFloat = 44
+        let p = NSPanel(
+            contentRect: NSRect(origin: .zero, size: NSSize(width: hudWidth, height: hudHeight)),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        p.isFloatingPanel = true
+        p.level = .statusBar
+        p.isOpaque = false
+        p.backgroundColor = .clear
+        p.hasShadow = false
+        p.isMovable = false
+        p.hidesOnDeactivate = false
+        p.ignoresMouseEvents = true
+        p.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        p.alphaValue = 0
+
+        let hosting = NSHostingView(rootView: HUDOverlayView(hud: hud))
+        hosting.autoresizingMask = [.width, .height]
+        p.contentView = hosting
+
+        hudPanel = p
+    }
+
+    /// Positions the HUD panel in a strip just below the collapsed notch/pill panel.
+    /// Uses the collapsed panel's geometry (stable, avoids mid-animation jitter).
+    private func positionHUDPanel() {
+        guard let hudPanel else { return }
+        let screen = geometry.screenFrame
+        let hudWidth: CGFloat = 220
+        let hudHeight: CGFloat = 44
+        let gap: CGFloat = 6
+        let topGap: CGFloat = geometry.hasNotch ? 0 : 4
+        let collapsedBottom = screen.maxY - geometry.collapsedSize.height - topGap
+        let originX = screen.midX - hudWidth / 2
+        let originY = collapsedBottom - gap - hudHeight
+        hudPanel.setFrame(
+            NSRect(x: originX, y: originY, width: hudWidth, height: hudHeight),
+            display: false
+        )
     }
 
     // MARK: - Screen geometry
