@@ -122,6 +122,7 @@ final class MediaController: ObservableObject {
     @Published private(set) var systemUnavailable: Bool = false
 
     let spotify = SpotifyController()
+    let spotifyWeb = SpotifyWebController.shared
     private let system = SystemNowPlayingController()
     private let prefs = NotchPreferences.shared
     private var rootCancellables = Set<AnyCancellable>()
@@ -143,20 +144,30 @@ final class MediaController: ObservableObject {
     func start() {
         spotify.start()
         system.start()
+        spotifyWeb.start()
         rebind(prefs.mediaSource)
     }
 
     private func rebind(_ src: MediaSource) {
         sourceCancellables.removeAll()
+        // Web API only polls when it is the active source to conserve Spotify API quota.
+        if src == .spotifyWeb {
+            spotifyWeb.startPolling()
+        } else {
+            spotifyWeb.stopPolling()
+        }
         switch src {
         case .spotify:
             spotify.$nowPlaying.receive(on: RunLoop.main).assign(to: \.nowPlaying, on: self).store(in: &sourceCancellables)
             spotify.$artwork.receive(on: RunLoop.main).assign(to: \.artwork, on: self).store(in: &sourceCancellables)
             spotify.$permissionDenied.receive(on: RunLoop.main).assign(to: \.permissionDenied, on: self).store(in: &sourceCancellables)
+        case .spotifyWeb:
+            spotifyWeb.$nowPlaying.receive(on: RunLoop.main).assign(to: \.nowPlaying, on: self).store(in: &sourceCancellables)
+            spotifyWeb.$artwork.receive(on: RunLoop.main).assign(to: \.artwork, on: self).store(in: &sourceCancellables)
+            permissionDenied = false
         case .nowPlaying:
             system.$nowPlaying.receive(on: RunLoop.main).assign(to: \.nowPlaying, on: self).store(in: &sourceCancellables)
             system.$artwork.receive(on: RunLoop.main).assign(to: \.artwork, on: self).store(in: &sourceCancellables)
-            // Clear Spotify-specific state
             permissionDenied = false
         }
         // Seed current values immediately on switch so widget doesn't flash stale data
@@ -165,6 +176,9 @@ final class MediaController: ObservableObject {
             nowPlaying = spotify.nowPlaying
             artwork = spotify.artwork
             permissionDenied = spotify.permissionDenied
+        case .spotifyWeb:
+            nowPlaying = spotifyWeb.nowPlaying
+            artwork = spotifyWeb.artwork
         case .nowPlaying:
             nowPlaying = system.nowPlaying
             artwork = system.artwork
@@ -173,21 +187,24 @@ final class MediaController: ObservableObject {
 
     func playPause() {
         switch prefs.mediaSource {
-        case .spotify:   spotify.playPause()
+        case .spotify:    spotify.playPause()
+        case .spotifyWeb: spotifyWeb.playPause()
         case .nowPlaying: system.playPause()
         }
     }
 
     func next() {
         switch prefs.mediaSource {
-        case .spotify:   spotify.next()
+        case .spotify:    spotify.next()
+        case .spotifyWeb: spotifyWeb.next()
         case .nowPlaying: system.next()
         }
     }
 
     func previous() {
         switch prefs.mediaSource {
-        case .spotify:   spotify.previous()
+        case .spotify:    spotify.previous()
+        case .spotifyWeb: spotifyWeb.previous()
         case .nowPlaying: system.previous()
         }
     }

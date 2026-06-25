@@ -39,6 +39,7 @@ struct MediaWidget: View {
     @ObservedObject var media: MediaController
     let expanded: Bool
     @ObservedObject private var prefs = NotchPreferences.shared
+    @ObservedObject private var spotifyWeb = SpotifyWebController.shared
 
     var body: some View {
         Group {
@@ -114,11 +115,24 @@ struct MediaWidget: View {
     }
 
     private func controls(_ np: NowPlaying) -> some View {
-        HStack(spacing: 28) {
-            controlButton("backward.fill") { media.previous() }
-            controlButton(np.isPlaying ? "pause.fill" : "play.fill", size: 22) { media.playPause() }
-            controlButton("forward.fill") { media.next() }
+        VStack(spacing: 4) {
+            HStack(spacing: 28) {
+                controlButton("backward.fill") { media.previous() }
+                controlButton(np.isPlaying ? "pause.fill" : "play.fill", size: 22) { media.playPause() }
+                controlButton("forward.fill") { media.next() }
+            }
+            .disabled(premiumControlsDisabled)
+            .opacity(premiumControlsDisabled ? 0.3 : 1)
+            if premiumControlsDisabled {
+                Text("Spotify Premium required for controls")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.white.opacity(0.45))
+            }
         }
+    }
+
+    private var premiumControlsDisabled: Bool {
+        prefs.mediaSource == .spotifyWeb && spotifyWeb.premiumRequired
     }
 
     private func controlButton(_ name: String, size: CGFloat = 16, action: @escaping () -> Void) -> some View {
@@ -131,7 +145,7 @@ struct MediaWidget: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Idle / permission denied
+    // MARK: - Idle / permission denied / not connected
 
     @ViewBuilder
     private var idleView: some View {
@@ -150,6 +164,32 @@ struct MediaWidget: View {
             }
             .buttonStyle(.plain)
             .help("Opens Privacy & Security > Automation so you can grant notchmate access to Spotify")
+        } else if prefs.mediaSource == .spotifyWeb, case .disconnected = spotifyWeb.authState {
+            Button(action: { spotifyWeb.connect() }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "link")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.green.opacity(0.85))
+                    Text("Connect Spotify")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+            }
+            .buttonStyle(.plain)
+            .help("Opens the Spotify authorization page in your browser")
+        } else if prefs.mediaSource == .spotifyWeb, case .connecting = spotifyWeb.authState {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                    .colorScheme(.dark)
+                Text("Connecting\u{2026}")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
         } else {
             HStack(spacing: 8) {
                 Image(systemName: "music.note")
