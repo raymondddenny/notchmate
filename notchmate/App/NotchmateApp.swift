@@ -15,10 +15,15 @@ struct NotchmateApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var notch: NotchWindowController?
+    private var settingsController: SettingsWindowController?
+    private var statusBar: StatusBarController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         notch = NotchWindowController()
         notch?.show()
+        let settings = SettingsWindowController()
+        settingsController = settings
+        statusBar = StatusBarController(settings: settings)
     }
 }
