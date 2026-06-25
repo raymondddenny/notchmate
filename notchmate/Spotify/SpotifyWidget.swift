@@ -32,11 +32,14 @@ private struct EqualizerBars: View {
 // MARK: - MediaWidget
 
 /// Media now-playing widget backed by MediaController (Spotify or system source).
-/// Collapsed: glanceable strip with optional artwork + playing indicator.
-/// Expanded: full track info + transport controls; layout determined by NotchPreferences.
+/// Collapsed: transport controls only (play/pause/prev/next) - no artwork or text.
+/// Expanded: full track info + optional single lyric line + transport controls.
 struct MediaWidget: View {
     @ObservedObject var media: MediaController
     let expanded: Bool
+    /// Optional lyrics controller. When provided and the .lyrics module is enabled,
+    /// a single crossfading lyric line appears between track info and controls.
+    var lyrics: LyricsController? = nil
     @ObservedObject private var prefs = NotchPreferences.shared
     @ObservedObject private var spotifyWeb = SpotifyWebController.shared
 
@@ -58,17 +61,13 @@ struct MediaWidget: View {
     // MARK: - Collapsed
 
     private func collapsedView(_ np: NowPlaying) -> some View {
-        HStack(spacing: Theme.sp2) {
-            if prefs.musicLayout == .artwork {
-                artworkThumb(size: 24, corner: 5)
-            }
-            Text(np.artist.isEmpty ? np.title : "\(np.artist) - \(np.title)")
-                .font(Theme.chipFont)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer(minLength: 4)
-            EqualizerBars(isPlaying: np.isPlaying)
+        HStack(spacing: 16) {
+            controlButton("backward.fill") { media.previous() }
+            controlButton(np.isPlaying ? "pause.fill" : "play.fill", size: 18) { media.playPause() }
+            controlButton("forward.fill") { media.next() }
         }
+        .disabled(premiumControlsDisabled)
+        .opacity(premiumControlsDisabled ? 0.35 : 1)
     }
 
     // MARK: - Expanded
@@ -87,6 +86,9 @@ struct MediaWidget: View {
                     trackInfo(np)
                     Spacer(minLength: 0)
                 }
+            }
+            if prefs.enabledModules.contains(.lyrics), let lc = lyrics {
+                LyricLineView(lyrics: lc)
             }
             controls(np)
         }
