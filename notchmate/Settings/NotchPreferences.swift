@@ -33,6 +33,18 @@ final class NotchPreferences: ObservableObject {
         didSet { UserDefaults.standard.set(showLyrics, forKey: "showLyrics") }
     }
 
+    @Published var hudVolumeEnabled: Bool {
+        didSet { UserDefaults.standard.set(hudVolumeEnabled, forKey: "hudVolumeEnabled") }
+    }
+
+    @Published var hudBrightnessEnabled: Bool {
+        didSet { UserDefaults.standard.set(hudBrightnessEnabled, forKey: "hudBrightnessEnabled") }
+    }
+
+    @Published var hudSuppressSystem: Bool {
+        didSet { UserDefaults.standard.set(hudSuppressSystem, forKey: "hudSuppressSystem") }
+    }
+
     private init() {
         if UserDefaults.standard.object(forKey: "showMenuBarIcon") != nil {
             showMenuBarIcon = UserDefaults.standard.bool(forKey: "showMenuBarIcon")
@@ -58,6 +70,24 @@ final class NotchPreferences: ObservableObject {
             showLyrics = UserDefaults.standard.bool(forKey: "showLyrics")
         } else {
             showLyrics = false
+        }
+
+        if UserDefaults.standard.object(forKey: "hudVolumeEnabled") != nil {
+            hudVolumeEnabled = UserDefaults.standard.bool(forKey: "hudVolumeEnabled")
+        } else {
+            hudVolumeEnabled = false
+        }
+
+        if UserDefaults.standard.object(forKey: "hudBrightnessEnabled") != nil {
+            hudBrightnessEnabled = UserDefaults.standard.bool(forKey: "hudBrightnessEnabled")
+        } else {
+            hudBrightnessEnabled = false
+        }
+
+        if UserDefaults.standard.object(forKey: "hudSuppressSystem") != nil {
+            hudSuppressSystem = UserDefaults.standard.bool(forKey: "hudSuppressSystem")
+        } else {
+            hudSuppressSystem = false
         }
     }
 
