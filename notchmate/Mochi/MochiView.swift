@@ -26,7 +26,8 @@ struct MochiView: View {
         )
     }
 
-    private var bodyH: CGFloat { expanded ? 46 : 20 }
+    // Expanded mascot is kept small + cute (it shares a tile, not a hero element).
+    private var bodyH: CGFloat { expanded ? 38 : 20 }
 
     var body: some View {
         Group {

@@ -20,10 +20,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        notch = NotchWindowController()
-        notch?.show()
         let settings = SettingsWindowController()
         settingsController = settings
+        notch = NotchWindowController(settings: settings)
+        notch?.show()
         statusBar = StatusBarController(settings: settings)
     }
 }
