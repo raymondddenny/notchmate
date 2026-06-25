@@ -46,27 +46,28 @@ struct ClaudeSessionsWidget: View {
                 Spacer(minLength: 0)
             }
             VStack(alignment: .leading, spacing: 3) {
-                let groups = sessions.groups
-                ForEach(groups.prefix(3)) { group in
+                ForEach(Array(sessions.sessions.prefix(3))) { session in
                     HStack(spacing: 6) {
                         Circle()
                             .fill(Self.accent)
                             .frame(width: 5, height: 5)
-                        Text(group.name)
-                            .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.8))
+                        Text(session.project ?? "session")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.85))
                             .lineLimit(1)
                             .truncationMode(.middle)
-                        if group.count > 1 {
-                            Text("×\(group.count)")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.5))
+                        if let branch = session.branch {
+                            Text(branch)
+                                .font(.system(size: 11).monospaced())
+                                .foregroundStyle(Self.accent.opacity(0.7))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
                         }
                         Spacer(minLength: 0)
                     }
                 }
-                if groups.count > 3 {
-                    Text("+\(groups.count - 3) more")
+                if sessions.count > 3 {
+                    Text("+\(sessions.count - 3) more")
                         .font(.system(size: 11))
                         .foregroundStyle(.white.opacity(0.5))
                         .padding(.leading, 11)

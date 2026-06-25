@@ -19,6 +19,10 @@ struct NowPlaying: Equatable {
 final class SpotifyController: ObservableObject {
     @Published private(set) var nowPlaying: NowPlaying?
     @Published private(set) var artwork: NSImage?
+    /// True after Automation TCC has been explicitly denied (-1743). Shows a distinct
+    /// hint in the widget so the user knows to fix it in System Settings, rather than
+    /// seeing a misleading "Nothing playing".
+    @Published private(set) var permissionDenied: Bool = false
 
     private var timer: Timer?
     private let queue = DispatchQueue(label: "notchmate.spotify.applescript")
@@ -44,9 +48,12 @@ final class SpotifyController: ObservableObject {
     private func poll() {
         queue.async { [weak self] in
             guard let self else { return }
-            let result = self.runScript(Self.fetchScript)
-            let parsed = result.flatMap(Self.parse)
+            let (raw, errorCode) = self.executeScript(Self.fetchScript)
+            let parsed = raw.flatMap(Self.parse)
+            // -1743 = errAEEventNotPermitted: Automation TCC denied (or not yet prompted).
+            let denied = errorCode == -1743
             DispatchQueue.main.async {
+                self.permissionDenied = denied
                 self.apply(parsed)
             }
         }
@@ -91,19 +98,28 @@ final class SpotifyController: ObservableObject {
         end if
         """
         queue.async { [weak self] in
-            _ = self?.runScript(script)
+            _ = self?.executeScript(script)
             self?.poll()
         }
     }
 
     // MARK: - AppleScript
 
-    private func runScript(_ source: String) -> String? {
+    /// Executes an AppleScript and returns (stdout, errorCode).
+    /// Logs any errors with their code and message so failures are diagnosable.
+    /// -1743 (errAEEventNotPermitted) means Automation TCC was denied.
+    @discardableResult
+    private func executeScript(_ source: String) -> (String?, Int?) {
         var error: NSDictionary?
-        guard let script = NSAppleScript(source: source) else { return nil }
+        guard let script = NSAppleScript(source: source) else { return (nil, nil) }
         let output = script.executeAndReturnError(&error)
-        if error != nil { return nil }
-        return output.stringValue
+        if let err = error {
+            let code = (err["NSAppleScriptErrorNumber"] as? NSNumber)?.intValue
+            let msg = err["NSAppleScriptErrorMessage"] as? String ?? ""
+            NSLog("[SpotifyController] AppleScript error %d: %@", code ?? 0, msg)
+            return (nil, code)
+        }
+        return (output.stringValue, nil)
     }
 
     private static let fetchScript = """

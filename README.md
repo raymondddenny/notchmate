@@ -19,7 +19,7 @@ A minimal notch-app skeleton with a Spotify now-playing widget:
 A live **Claude Code session** indicator, free-tier, in its own widget next to Spotify:
 
 - **Collapsed:** a small glyph + count of running Claude Code sessions. Hidden entirely when there are none.
-- **Expanded** (on hover): a short per-project list (e.g. `notchmate`, `firstmate ×3`), capped to a few rows with a `+N more` line.
+- **Expanded** (on hover): individual session rows showing the project name and current git branch (e.g. `notchmate  main`), capped to three rows with a `+N more` line.
 - Running sessions are detected by enumerating live `claude` processes (see [How sessions are detected](#how-sessions-are-detected)). The count updates within a few seconds as sessions start and stop.
 - With zero sessions the indicator simply disappears - no crash, no error spam.
 
@@ -148,11 +148,19 @@ If macOS still refuses to open it, go to **System Settings > Privacy & Security*
 
 ### Automation permission (first run)
 
-The Spotify widget talks to the Spotify desktop app via AppleScript. On first run, macOS shows a prompt:
+The Spotify widget talks to the Spotify desktop app via AppleScript.
+On the first poll after Spotify is running, macOS shows a prompt:
 
 > "notchmate" wants access to control "Spotify".
 
-Click **OK**. If you dismiss it, the widget stays in the idle state - re-enable it under **System Settings > Privacy & Security > Automation > notchmate > Spotify**.
+Click **OK**.
+
+If you click **Don't Allow** (or if you previously dismissed the prompt), notchmate cannot read Spotify.
+Instead of a misleading "Nothing playing", the widget shows **"Allow Spotify access in System Settings"**.
+To fix it, open **System Settings > Privacy & Security > Automation**, find **notchmate**, and enable the **Spotify** toggle.
+
+All AppleScript errors are logged to Console.app as `[SpotifyController] AppleScript error <code>: <message>` for diagnosis.
+Error -1743 (`errAEEventNotPermitted`) is the TCC-denied code.
 
 ### Notification permission (focus timer)
 
