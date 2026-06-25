@@ -83,7 +83,7 @@ struct NotchView: View {
     private func tileContent(_ module: LayoutModule) -> some View {
         switch module {
         case .media:
-            MediaWidget(media: media, expanded: true)
+            MediaWidget(media: media, expanded: true, lyrics: lyrics)
         case .mochi:
             HStack {
                 Spacer(minLength: 0)
@@ -121,9 +121,7 @@ struct NotchView: View {
             if prefs.enabledModules.contains(.timer) {
                 FocusTimerWidget(timer: focus, expanded: false)
             }
-            if prefs.enabledModules.contains(.claude) {
-                ClaudeSessionsWidget(sessions: claude, expanded: false)
-            }
+            // .claude is expanded-only; omitted from collapsed strip to keep it lean.
             if prefs.enabledModules.contains(.git) {
                 GitWidget(git: git, expanded: false)
             }

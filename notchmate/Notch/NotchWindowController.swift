@@ -8,6 +8,8 @@ import Combine
 final class NotchWindowController {
     private let panel: NotchPanel
     private var hudPanel: NSPanel?
+    private var lyricsPanel: NSPanel?
+    private var hudActive = false
     private let media = MediaController()
     private let claude = ClaudeSessionsController()
     private let git: GitController
@@ -83,6 +85,7 @@ final class NotchWindowController {
 
         positionPanel(size: geometry.collapsedSize)
         setupHUDPanel()
+        setupLyricsPanel()
 
         // Re-fit the panel when layout preferences change (row count, enabled modules,
         // module order) so the size always matches the grid content.
@@ -99,22 +102,39 @@ final class NotchWindowController {
             .store(in: &cancellables)
 
         // Show/fade the HUD panel below the notch when a HUD event fires.
+        // Also hide the lyrics strip while HUD is visible to prevent overlap.
         hud.$currentEvent
             .receive(on: RunLoop.main)
             .sink { [weak self] event in
                 guard let self else { return }
+                self.hudActive = event != nil
                 if event != nil { self.positionHUDPanel() }
                 NSAnimationContext.runAnimationGroup { ctx in
                     ctx.duration = event != nil ? 0.15 : 0.3
                     self.hudPanel?.animator().alphaValue = event != nil ? 1 : 0
                 }
+                self.updateLyricsPanel()
             }
+            .store(in: &cancellables)
+
+        // Show/hide the lyrics strip as the synced lyric line changes.
+        lyrics.$state
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.updateLyricsPanel() }
+            .store(in: &cancellables)
+
+        // Hide lyrics strip when panel is expanded (lyric is already in the media tile).
+        isExpanded
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.updateLyricsPanel() }
             .store(in: &cancellables)
     }
 
     func show() {
         panel.orderFrontRegardless()
         hudPanel?.orderFrontRegardless()
+        lyricsPanel?.orderFrontRegardless()
+        positionLyricsPanel()
         media.start()
         claude.start()
         git.start()
@@ -232,6 +252,64 @@ final class NotchWindowController {
             NSRect(x: originX, y: originY, width: hudWidth, height: hudHeight),
             display: false
         )
+    }
+
+    // MARK: - Lyrics strip panel
+
+    /// Creates the floating lyrics strip panel (borderless, non-activating, ignores mouse).
+    /// Mirrors the HUD panel setup; content is LyricsStripOverlayView.
+    private func setupLyricsPanel() {
+        let p = NSPanel(
+            contentRect: NSRect(origin: .zero, size: NSSize(width: 340, height: 44)),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        p.isFloatingPanel = true
+        p.level = .statusBar
+        p.isOpaque = false
+        p.backgroundColor = .clear
+        p.hasShadow = false
+        p.isMovable = false
+        p.hidesOnDeactivate = false
+        p.ignoresMouseEvents = true
+        p.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        p.alphaValue = 0
+
+        let hosting = NSHostingView(rootView: LyricsStripOverlayView(lyrics: lyrics))
+        hosting.autoresizingMask = [.width, .height]
+        p.contentView = hosting
+
+        lyricsPanel = p
+    }
+
+    /// Positions the lyrics strip panel at the same slot as the HUD panel (just below the notch).
+    /// Uses collapsed geometry so position is stable across expand/collapse animations.
+    private func positionLyricsPanel() {
+        guard let lyricsPanel else { return }
+        let screen = geometry.screenFrame
+        let lyricsWidth: CGFloat = 340
+        let lyricsHeight: CGFloat = 44
+        let gap: CGFloat = 6
+        let topGap: CGFloat = geometry.hasNotch ? 0 : 4
+        let collapsedBottom = screen.maxY - geometry.collapsedSize.height - topGap
+        let originX = screen.midX - lyricsWidth / 2
+        let originY = collapsedBottom - gap - lyricsHeight
+        lyricsPanel.setFrame(
+            NSRect(x: originX, y: originY, width: lyricsWidth, height: lyricsHeight),
+            display: false
+        )
+    }
+
+    /// Shows or hides the lyrics strip based on: HUD active, panel expanded, lyric available.
+    private func updateLyricsPanel() {
+        guard let lyricsPanel else { return }
+        let hasLine = lyrics.currentLine != nil
+        let shouldShow = !hudActive && !isExpanded.value && hasLine
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = shouldShow ? 0.2 : 0.3
+            lyricsPanel.animator().alphaValue = shouldShow ? 1 : 0
+        }
     }
 
     // MARK: - Screen geometry

@@ -232,6 +232,17 @@ final class LyricsController: ObservableObject {
         return TimeInterval(result.doubleValue)
     }
 
+    // MARK: - Convenience accessors
+
+    /// The text of the currently active synced lyric line.
+    /// Returns nil for instrumental gaps (empty text), non-synced states, or out-of-range indices.
+    var currentLine: String? {
+        guard case .synced(let lines, let index) = state,
+              index < lines.count else { return nil }
+        let t = lines[index].text
+        return t.isEmpty ? nil : t
+    }
+
     // MARK: - LRC parsing
 
     private static func parseLRC(_ lrc: String) -> [LyricLine] {
