@@ -20,11 +20,15 @@ enum Theme {
 
     // MARK: - Panel layout
     /// Horizontal padding inside the panel content area.
-    static let panelPadH: CGFloat = 12
+    static let panelPadH: CGFloat = 10
     /// Bottom padding inside the panel content area.
     static let panelPadBottom: CGFloat = 10
     /// Vertical spacing between widget blocks in the expanded VStack.
     static let sectionSpacing: CGFloat = 8
+    /// Gap between module tiles in a row, and between rows.
+    static let tileGap: CGFloat = 7
+    /// Corner radius for module tiles.
+    static let tileCorner: CGFloat = 10
 
     // MARK: - Typography roles
     /// Widget section labels ("Focus", "CPU"), secondary info rows.
@@ -39,11 +43,19 @@ enum Theme {
     static let chipFont        = Font.system(size: 12, weight: .medium)
     static let chipMonoFont    = Font.system(size: 12, weight: .semibold)
 
-    // MARK: - Text colors (on black panel)
+    // MARK: - Panel surface colors (non-pure-black charcoal)
+    /// Main panel background: dark cool charcoal #15171A, not pure black.
+    static let panelBackground = Color(red: 0.082, green: 0.090, blue: 0.102)
+    /// Elevated module tile surface: slightly lighter #1C2028.
+    static let panelSurface    = Color(red: 0.110, green: 0.127, blue: 0.157)
+    /// Panel outer border stroke.
+    static let panelBorder     = Color.white.opacity(0.09)
+
+    // MARK: - Text colors (on dark charcoal panel)
     static let textPrimary   = Color.white               // titles, values
-    static let textSecondary = Color.white.opacity(0.6)  // labels, subtitles
-    static let textTertiary  = Color.white.opacity(0.4)  // hints, placeholders
-    static let textDisabled  = Color.white.opacity(0.3)  // separators, muted
+    static let textSecondary = Color.white.opacity(0.60) // labels, subtitles
+    static let textTertiary  = Color.white.opacity(0.38) // hints, placeholders
+    static let textDisabled  = Color.white.opacity(0.28) // separators, muted
 
     // MARK: - Widget accent colors (one per widget, used sparingly)
     static let accentTimer   = Color(red: 0.95, green: 0.45, blue: 0.45) // tomato
@@ -56,5 +68,5 @@ enum Theme {
     /// Progress-bar / level-bar track background.
     static let trackBackground = Color.white.opacity(0.12)
     /// Section divider overlay.
-    static let dividerColor    = Color.white.opacity(0.10)
+    static let dividerColor    = Color.white.opacity(0.09)
 }

@@ -35,10 +35,22 @@ final class NotchWindowController {
             // Wide enough to flank the notch with a glanceable strip beneath it.
             NSSize(width: max(notchWidth + 160, 260), height: notchHeight + 36)
         }
-        /// Base expanded size (Mochi + media block). Per-feature additions are layered
-        /// on by the controller so the geometry math stays feature-agnostic.
-        func expandedSize(extraHeight: CGFloat) -> NSSize {
-            NSSize(width: 380, height: notchHeight + 152 + extraHeight)
+        /// Expanded size for the horizontal grid layout.
+        /// Width grows as rowCount decreases (fewer rows = wider = more horizontal space).
+        /// Height is fixed per row count; row height = 76pt with 7pt gaps and 20pt padding.
+        func expandedSize(rowCount: Int) -> NSSize {
+            let rowH: CGFloat = 76
+            let gap: CGFloat = 7
+            let pad: CGFloat = 20  // top 4 + bottom 10 + extra 6
+            let contentH = CGFloat(rowCount) * rowH + CGFloat(max(0, rowCount - 1)) * gap + pad
+            let baseWidth: CGFloat
+            switch rowCount {
+            case 1:  baseWidth = 580
+            case 2:  baseWidth = 480
+            default: baseWidth = 400
+            }
+            let width = max(baseWidth, notchWidth + 200)
+            return NSSize(width: width, height: notchHeight + contentH)
         }
         /// Top inset before content starts (reserves the physical notch region).
         var topInset: CGFloat { notchHeight }
@@ -71,15 +83,13 @@ final class NotchWindowController {
 
         positionPanel(size: geometry.collapsedSize)
 
-        // While expanded, re-fit the panel as blocks that change height appear/disappear
-        // (Claude session list, git block) so nothing is clipped and idle leaves no dead
-        // space. Timer/stats blocks are always shown, so their content changes don't
-        // affect height.
-        claude.$sessions
+        // Re-fit the panel when layout preferences change (row count, enabled modules,
+        // module order) so the size always matches the grid content.
+        let prefs = NotchPreferences.shared
+        prefs.$expandedRowCount
             .map { _ in () }
-            .merge(with: git.$state.map { _ in () })
-            .merge(with: NotchPreferences.shared.$showLyrics.map { _ in () })
-            .merge(with: lyrics.$state.map { $0.isPresent }.removeDuplicates().map { _ in () })
+            .merge(with: prefs.$enabledModules.map { _ in () })
+            .merge(with: prefs.$moduleOrder.map { _ in () })
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self, self.isExpanded.value else { return }
@@ -99,20 +109,11 @@ final class NotchWindowController {
         hud.start()
     }
 
-    /// Extra expanded height beyond the base (Mochi + Spotify) block, summed per widget:
-    /// - Timer + System stats are always shown (fixed blocks).
-    /// - Claude block: header + up to 3 project rows (rest folds into "+N more").
-    /// - Git block: one two-line row, only when a repo is in context.
+    /// Expanded panel size: derived from row count preference.
+    /// Width is wider for fewer rows (more horizontal space); height is fixed per row count.
     private var currentExpandedSize: NSSize {
-        let rows = min(claude.count, 3) + (claude.count > 3 ? 1 : 0)
-        let claudeExtra: CGFloat = claude.count > 0 ? CGFloat(34 + rows * 18) : 0
-        let gitExtra: CGFloat = git.state != nil ? 42 : 0
-        let timerExtra: CGFloat = 48
-        let statsExtra: CGFloat = 44
-        let prefs = NotchPreferences.shared
-        // Lyrics block: 5 visible lines at ~18px + spacing, only when a track is loaded.
-        let lyricsExtra: CGFloat = prefs.showLyrics && lyrics.state.isPresent ? 108 : 0
-        return geometry.expandedSize(extraHeight: claudeExtra + gitExtra + timerExtra + statsExtra + lyricsExtra)
+        let rowCount = NotchPreferences.shared.expandedRowCount
+        return geometry.expandedSize(rowCount: rowCount)
     }
 
     // MARK: - Hover handling

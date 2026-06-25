@@ -32,6 +32,7 @@
 		2222222222222222222222C6 /* AboutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B6 /* AboutPane.swift */; };
 		2222222222222222222222C7 /* MediaPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B7 /* MediaPane.swift */; };
 		2222222222222222222222C8 /* HUDsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B8 /* HUDsPane.swift */; };
+		2222222222222222222222C9 /* LayoutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111B9 /* LayoutPane.swift */; };
 		2222222222222222222222D1 /* MediaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111C1 /* MediaController.swift */; };
 		2222222222222222222222E1 /* LyricsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111D1 /* LyricsController.swift */; };
 		2222222222222222222222E2 /* LyricsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111D2 /* LyricsWidget.swift */; };
@@ -67,6 +68,7 @@
 		1111111111111111111111B6 /* AboutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/AboutPane.swift; sourceTree = "<group>"; };
 		1111111111111111111111B7 /* MediaPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/MediaPane.swift; sourceTree = "<group>"; };
 		1111111111111111111111B8 /* HUDsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/HUDsPane.swift; sourceTree = "<group>"; };
+		1111111111111111111111B9 /* LayoutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/LayoutPane.swift; sourceTree = "<group>"; };
 		1111111111111111111111C1 /* MediaController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Media/MediaController.swift; sourceTree = "<group>"; };
 		1111111111111111111111D1 /* LyricsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lyrics/LyricsController.swift; sourceTree = "<group>"; };
 		1111111111111111111111D2 /* LyricsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lyrics/LyricsWidget.swift; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 				1111111111111111111111B6 /* AboutPane.swift */,
 				1111111111111111111111B7 /* MediaPane.swift */,
 				1111111111111111111111B8 /* HUDsPane.swift */,
+				1111111111111111111111B9 /* LayoutPane.swift */,
 				1111111111111111111111C1 /* MediaController.swift */,
 				1111111111111111111111D1 /* LyricsController.swift */,
 				1111111111111111111111D2 /* LyricsWidget.swift */,
@@ -237,6 +240,7 @@
 				2222222222222222222222C6 /* AboutPane.swift in Sources */,
 				2222222222222222222222C7 /* MediaPane.swift in Sources */,
 				2222222222222222222222C8 /* HUDsPane.swift in Sources */,
+				2222222222222222222222C9 /* LayoutPane.swift in Sources */,
 				2222222222222222222222D1 /* MediaController.swift in Sources */,
 				2222222222222222222222E1 /* LyricsController.swift in Sources */,
 				2222222222222222222222E2 /* LyricsWidget.swift in Sources */,
