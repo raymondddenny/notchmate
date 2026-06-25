@@ -6,6 +6,9 @@ import SwiftUI
 struct NotchView: View {
     @ObservedObject var spotify: SpotifyController
     @ObservedObject var claude: ClaudeSessionsController
+    @ObservedObject var git: GitController
+    @ObservedObject var focus: FocusTimerController
+    @ObservedObject var stats: SystemStatsController
     let hasNotch: Bool
     let topInset: CGFloat
     let onHoverChange: (Bool) -> Void
@@ -48,18 +51,35 @@ struct NotchView: View {
                     Spacer(minLength: 0)
                 }
                 SpotifyWidget(spotify: spotify, expanded: true)
+                divider
+                FocusTimerWidget(timer: focus, expanded: true)
+                if git.state != nil {
+                    divider
+                    GitWidget(git: git, expanded: true)
+                }
                 if claude.count > 0 {
-                    Divider().overlay(Color.white.opacity(0.1))
+                    divider
                     ClaudeSessionsWidget(sessions: claude, expanded: true)
                 }
+                divider
+                SystemStatsWidget(stats: stats, expanded: true)
             }
         } else {
+            // Collapsed strip: Spotify takes the flexible space; the rest are compact
+            // chips that each show only when they have something worth surfacing.
             HStack(spacing: 10) {
                 MochiView(spotify: spotify, claude: claude, expanded: false)
                 SpotifyWidget(spotify: spotify, expanded: false)
+                FocusTimerWidget(timer: focus, expanded: false)
                 ClaudeSessionsWidget(sessions: claude, expanded: false)
+                GitWidget(git: git, expanded: false)
+                SystemStatsWidget(stats: stats, expanded: false)
             }
         }
+    }
+
+    private var divider: some View {
+        Divider().overlay(Color.white.opacity(0.1))
     }
 
     private var background: some View {
