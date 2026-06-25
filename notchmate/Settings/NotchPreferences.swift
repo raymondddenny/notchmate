@@ -13,7 +13,7 @@ enum LayoutModule: String, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .media:  return "Media Player"
-        case .mochi:  return "Mascot (Mochi)"
+        case .mochi:  return "Mascot"
         case .lyrics: return "Lyrics"
         case .timer:  return "Focus Timer"
         case .git:    return "Git Status"
@@ -36,6 +36,20 @@ enum LayoutModule: String, CaseIterable, Identifiable {
 }
 
 // MARK: - Supporting enums
+
+enum MascotCharacter: String, CaseIterable {
+    case mochi  = "mochi"
+    case ducky2 = "ducky2"
+    case ducky3 = "ducky3"
+
+    var displayName: String {
+        switch self {
+        case .mochi:  return "Mochi"
+        case .ducky2: return "Ducky"
+        case .ducky3: return "Ducky (Alt)"
+        }
+    }
+}
 
 enum MediaSource: String {
     case spotify    = "spotify"
@@ -60,6 +74,12 @@ final class NotchPreferences: ObservableObject {
         .media, .claude, .timer, .mochi, .lyrics, .git, .stats
     ]
     static let defaultEnabledModules: Set<LayoutModule> = [.media, .claude, .timer]
+
+    // MARK: - Mascot
+
+    @Published var mascotCharacter: MascotCharacter {
+        didSet { UserDefaults.standard.set(mascotCharacter.rawValue, forKey: "mascotCharacter") }
+    }
 
     // MARK: - General
 
@@ -125,6 +145,10 @@ final class NotchPreferences: ObservableObject {
         // Phase 1: initialize all backing stores directly so self is fully formed
         // before any property accessor (didSet) can reference self.
         let ud = UserDefaults.standard
+
+        let mascotRaw = ud.string(forKey: "mascotCharacter") ?? "mochi"
+        let mascot = MascotCharacter(rawValue: mascotRaw) ?? .mochi
+        _mascotCharacter = Published(wrappedValue: mascot)
 
         let menuIcon = ud.object(forKey: "showMenuBarIcon") != nil
             ? ud.bool(forKey: "showMenuBarIcon") : true

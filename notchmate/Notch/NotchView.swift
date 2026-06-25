@@ -88,7 +88,7 @@ struct NotchView: View {
         case .mochi:
             HStack {
                 Spacer(minLength: 0)
-                MochiView(media: media, claude: claude, expanded: true)
+                MascotView(media: media, claude: claude, expanded: true)
                 Spacer(minLength: 0)
             }
         case .lyrics:
@@ -123,7 +123,7 @@ struct NotchView: View {
     private var collapsedChips: some View {
         HStack(spacing: Theme.sp2) {
             if prefs.enabledModules.contains(.mochi) {
-                MochiView(media: media, claude: claude, expanded: false)
+                MascotView(media: media, claude: claude, expanded: false)
             }
             if prefs.enabledModules.contains(.media) {
                 MediaWidget(media: media, expanded: false)

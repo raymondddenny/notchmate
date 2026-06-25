@@ -18,6 +18,7 @@ struct SettingsView: View {
             case .layout:  LayoutPane()
             case .media:   MediaPane()
             case .huds:    HUDsPane()
+            case .mascot:  MascotPane()
             case .about:   AboutPane()
             }
         }
@@ -26,7 +27,7 @@ struct SettingsView: View {
 }
 
 enum SettingsPane: String, CaseIterable, Identifiable, Hashable {
-    case general, layout, media, huds, about
+    case general, layout, media, huds, mascot, about
     var id: String { rawValue }
 
     var label: String {
@@ -35,6 +36,7 @@ enum SettingsPane: String, CaseIterable, Identifiable, Hashable {
         case .layout:  return "Layout"
         case .media:   return "Media"
         case .huds:    return "HUDs"
+        case .mascot:  return "Mascot"
         case .about:   return "About"
         }
     }
@@ -45,6 +47,7 @@ enum SettingsPane: String, CaseIterable, Identifiable, Hashable {
         case .layout:  return "square.grid.2x2"
         case .media:   return "music.note"
         case .huds:    return "rectangle.stack"
+        case .mascot:  return "pawprint"
         case .about:   return "info.circle"
         }
     }
