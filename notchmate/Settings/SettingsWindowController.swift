@@ -6,7 +6,9 @@ import SwiftUI
 final class SettingsWindowController {
     private var window: NSWindow?
 
-    func show() {
+    /// Bring the window forward, optionally deep-linking to a specific pane.
+    func show(pane: SettingsPane? = nil) {
+        if let pane { SettingsNavigator.shared.selection = pane }
         if window == nil {
             let win = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 580, height: 420),

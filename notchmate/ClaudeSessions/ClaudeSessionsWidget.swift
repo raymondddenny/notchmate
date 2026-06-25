@@ -6,16 +6,33 @@ import SwiftUI
 struct ClaudeSessionsWidget: View {
     @ObservedObject var sessions: ClaudeSessionsController
     let expanded: Bool
+    /// Expanded tile is clickable: opens the Claude Sessions settings pane (manage/stop).
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
         Group {
             if sessions.count > 0 {
-                if expanded { expandedView } else { collapsedView }
+                if expanded { expandedTile } else { collapsedView }
             } else {
                 EmptyView()
             }
         }
         .foregroundStyle(.white)
+    }
+
+    // MARK: - Expanded tile (tappable)
+
+    @ViewBuilder
+    private var expandedTile: some View {
+        if let onTap {
+            Button(action: onTap) {
+                expandedView
+            }
+            .buttonStyle(.plain)
+            .help("Open Claude Sessions settings to manage or stop a session")
+        } else {
+            expandedView
+        }
     }
 
     // MARK: - Collapsed
@@ -42,6 +59,11 @@ struct ClaudeSessionsWidget: View {
                 Text("\(sessions.count) Claude session\(sessions.count == 1 ? "" : "s")")
                     .font(Theme.primaryFont)
                 Spacer(minLength: 0)
+                if onTap != nil {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Theme.textTertiary)
+                }
             }
             VStack(alignment: .leading, spacing: Theme.sp1 - 1) {
                 ForEach(Array(sessions.sessions.prefix(3))) { session in
