@@ -9,19 +9,19 @@ import SwiftUI
 /// crossfade the face via animatable opacities so nothing snaps. Honors Reduce Motion
 /// by dropping the per-frame loop and holding a calm static pose.
 struct MochiView: View {
-    @ObservedObject var spotify: SpotifyController
+    @ObservedObject var media: MediaController
     @ObservedObject var claude: ClaudeSessionsController
     let expanded: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var mood: MochiMood = .sleeping
 
-    /// Mood derived live from the two existing controllers. Single source of truth for
-    /// the rule lives in `MochiMood.derive`.
+    /// Mood derived live from active media source + Claude sessions.
+    /// Mochi dances to any media source, not just Spotify.
     private var liveMood: MochiMood {
         MochiMood.derive(
-            spotifyPlaying: spotify.nowPlaying?.isPlaying == true,
-            spotifyPresent: spotify.nowPlaying != nil,
+            spotifyPlaying: media.nowPlaying?.isPlaying == true,
+            spotifyPresent: media.nowPlaying != nil,
             claudeSessions: claude.count
         )
     }

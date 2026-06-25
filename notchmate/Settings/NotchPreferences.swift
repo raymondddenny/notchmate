@@ -2,8 +2,18 @@ import Combine
 import Foundation
 import ServiceManagement
 
+enum MediaSource: String {
+    case spotify    = "spotify"
+    case nowPlaying = "nowPlaying"
+}
+
+enum MusicLayout: String {
+    case artwork = "artwork"
+    case compact = "compact"
+}
+
 /// Shared preferences store. All panes bind to this; persist via UserDefaults.
-/// Add new fields here as later panes (Media, HUDs) require them.
+/// Add new fields here as later panes (HUDs) require them.
 final class NotchPreferences: ObservableObject {
     static let shared = NotchPreferences()
 
@@ -11,11 +21,33 @@ final class NotchPreferences: ObservableObject {
         didSet { UserDefaults.standard.set(showMenuBarIcon, forKey: "showMenuBarIcon") }
     }
 
+    @Published var mediaSource: MediaSource {
+        didSet { UserDefaults.standard.set(mediaSource.rawValue, forKey: "mediaSource") }
+    }
+
+    @Published var musicLayout: MusicLayout {
+        didSet { UserDefaults.standard.set(musicLayout.rawValue, forKey: "musicLayout") }
+    }
+
     private init() {
         if UserDefaults.standard.object(forKey: "showMenuBarIcon") != nil {
             showMenuBarIcon = UserDefaults.standard.bool(forKey: "showMenuBarIcon")
         } else {
             showMenuBarIcon = true
+        }
+
+        if let raw = UserDefaults.standard.string(forKey: "mediaSource"),
+           let src = MediaSource(rawValue: raw) {
+            mediaSource = src
+        } else {
+            mediaSource = .spotify
+        }
+
+        if let raw = UserDefaults.standard.string(forKey: "musicLayout"),
+           let layout = MusicLayout(rawValue: raw) {
+            musicLayout = layout
+        } else {
+            musicLayout = .artwork
         }
     }
 
