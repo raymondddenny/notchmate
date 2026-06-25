@@ -32,6 +32,11 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 
 ## Sharp edges
 
+- **Hover-region oscillation trap:** `.onHover` (backed by `NSTrackingArea`) fires spurious `mouseExited` events at intermediate window sizes while AppKit animates the panel frame. Without a grace window, this creates an expand/collapse loop: hover → expand starts → transient exit → collapse starts → re-enter → loop. Fix: `NotchWindowController.handleHoverChange` defers the collapse by 0.25 s (> animation duration 0.22 s) via a cancellable `DispatchWorkItem`; `mouseEntered` cancels it immediately so real exit still collapses promptly. Do NOT remove or shorten the delay - the 0.25 s is load-bearing.
+- **Panel frame animation - use `panel.animator().setFrame` not `setFrame(animate:)`:** `NSWindow.setFrame(_:display:animate:)` with `animate: true` uses `NSWindow.animationResizeTime`, ignoring any enclosing `NSAnimationContext`. To honor `NSAnimationContext` duration/curve (easeOut 0.22 s), use `panel.animator().setFrame(frame, display: true)` inside `NSAnimationContext.runAnimationGroup`. This routes through Core Animation and matches the SwiftUI content animation.
+- **Top-anchor invariant:** `positionPanel` always computes `originY = screen.maxY - size.height - topGap`, so `originY + height = screen.maxY - topGap` is constant regardless of panel size. This pins the top edge under the notch and makes the panel grow downward. Any refactor that changes `originY` without preserving this invariant will break the anchor.
+
+
 - AppleScript MUST guard every call with `if application "Spotify" is running` - a bare `tell application "Spotify"` auto-launches Spotify. The guard also keeps a closed Spotify silent (idle state, no error spam).
 - `NSAppleScript` runs on a dedicated serial queue (not main); results published back to main. Artwork is fetched from `artwork url` and cached per track id.
 - Automation TCC prompt fires on first transport/poll; `NSAppleEventsUsageDescription` is set in Info.plist.
