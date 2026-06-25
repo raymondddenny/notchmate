@@ -15,34 +15,37 @@ struct SettingsView: View {
         } detail: {
             switch selection {
             case .general: GeneralPane()
+            case .layout:  LayoutPane()
             case .media:   MediaPane()
             case .huds:    HUDsPane()
             case .about:   AboutPane()
             }
         }
-        .frame(minWidth: 560, minHeight: 380)
+        .frame(minWidth: 560, minHeight: 420)
     }
 }
 
 enum SettingsPane: String, CaseIterable, Identifiable, Hashable {
-    case general, media, huds, about
+    case general, layout, media, huds, about
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .general: "General"
-        case .media:   "Media"
-        case .huds:    "HUDs"
-        case .about:   "About"
+        case .general: return "General"
+        case .layout:  return "Layout"
+        case .media:   return "Media"
+        case .huds:    return "HUDs"
+        case .about:   return "About"
         }
     }
 
     var icon: String {
         switch self {
-        case .general: "gear"
-        case .media:   "music.note"
-        case .huds:    "rectangle.stack"
-        case .about:   "info.circle"
+        case .general: return "gear"
+        case .layout:  return "square.grid.2x2"
+        case .media:   return "music.note"
+        case .huds:    return "rectangle.stack"
+        case .about:   return "info.circle"
         }
     }
 }
