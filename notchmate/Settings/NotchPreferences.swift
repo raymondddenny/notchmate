@@ -2,6 +2,41 @@ import Combine
 import Foundation
 import ServiceManagement
 
+// MARK: - LayoutModule
+
+/// Identifies each expandable panel widget. Order + enabled state are persisted by
+/// NotchPreferences so the user can reorder and toggle modules in Settings > Layout.
+enum LayoutModule: String, CaseIterable, Identifiable {
+    case media, mochi, lyrics, timer, git, claude, stats
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .media:  return "Media Player"
+        case .mochi:  return "Mascot (Mochi)"
+        case .lyrics: return "Lyrics"
+        case .timer:  return "Focus Timer"
+        case .git:    return "Git Status"
+        case .claude: return "Claude Sessions"
+        case .stats:  return "System Stats"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .media:  return "music.note"
+        case .mochi:  return "face.smiling"
+        case .lyrics: return "text.quote"
+        case .timer:  return "timer"
+        case .git:    return "arrow.triangle.branch"
+        case .claude: return "sparkles"
+        case .stats:  return "cpu"
+        }
+    }
+}
+
+// MARK: - Supporting enums
+
 enum MediaSource: String {
     case spotify    = "spotify"
     case spotifyWeb = "spotifyWeb"
@@ -13,14 +48,26 @@ enum MusicLayout: String {
     case compact = "compact"
 }
 
+// MARK: - NotchPreferences
+
 /// Shared preferences store. All panes bind to this; persist via UserDefaults.
-/// Add new fields here as later panes (HUDs) require them.
+/// Add new fields here as later panes require them.
 final class NotchPreferences: ObservableObject {
     static let shared = NotchPreferences()
+
+    // MARK: - Layout module defaults
+    static let defaultModuleOrder: [LayoutModule] = [
+        .media, .claude, .timer, .mochi, .lyrics, .git, .stats
+    ]
+    static let defaultEnabledModules: Set<LayoutModule> = [.media, .claude, .timer]
+
+    // MARK: - General
 
     @Published var showMenuBarIcon: Bool {
         didSet { UserDefaults.standard.set(showMenuBarIcon, forKey: "showMenuBarIcon") }
     }
+
+    // MARK: - Media
 
     @Published var mediaSource: MediaSource {
         didSet { UserDefaults.standard.set(mediaSource.rawValue, forKey: "mediaSource") }
@@ -34,6 +81,8 @@ final class NotchPreferences: ObservableObject {
         didSet { UserDefaults.standard.set(showLyrics, forKey: "showLyrics") }
     }
 
+    // MARK: - HUDs
+
     @Published var hudVolumeEnabled: Bool {
         didSet { UserDefaults.standard.set(hudVolumeEnabled, forKey: "hudVolumeEnabled") }
     }
@@ -46,51 +95,98 @@ final class NotchPreferences: ObservableObject {
         didSet { UserDefaults.standard.set(hudSuppressSystem, forKey: "hudSuppressSystem") }
     }
 
-    private init() {
-        if UserDefaults.standard.object(forKey: "showMenuBarIcon") != nil {
-            showMenuBarIcon = UserDefaults.standard.bool(forKey: "showMenuBarIcon")
-        } else {
-            showMenuBarIcon = true
-        }
+    // MARK: - Layout
 
-        if let raw = UserDefaults.standard.string(forKey: "mediaSource"),
-           let src = MediaSource(rawValue: raw) {
-            mediaSource = src
-        } else {
-            mediaSource = .spotifyWeb
-        }
-
-        if let raw = UserDefaults.standard.string(forKey: "musicLayout"),
-           let layout = MusicLayout(rawValue: raw) {
-            musicLayout = layout
-        } else {
-            musicLayout = .artwork
-        }
-
-        if UserDefaults.standard.object(forKey: "showLyrics") != nil {
-            showLyrics = UserDefaults.standard.bool(forKey: "showLyrics")
-        } else {
-            showLyrics = false
-        }
-
-        if UserDefaults.standard.object(forKey: "hudVolumeEnabled") != nil {
-            hudVolumeEnabled = UserDefaults.standard.bool(forKey: "hudVolumeEnabled")
-        } else {
-            hudVolumeEnabled = false
-        }
-
-        if UserDefaults.standard.object(forKey: "hudBrightnessEnabled") != nil {
-            hudBrightnessEnabled = UserDefaults.standard.bool(forKey: "hudBrightnessEnabled")
-        } else {
-            hudBrightnessEnabled = false
-        }
-
-        if UserDefaults.standard.object(forKey: "hudSuppressSystem") != nil {
-            hudSuppressSystem = UserDefaults.standard.bool(forKey: "hudSuppressSystem")
-        } else {
-            hudSuppressSystem = false
+    @Published var moduleOrder: [LayoutModule] {
+        didSet {
+            UserDefaults.standard.set(moduleOrder.map(\.rawValue), forKey: "moduleOrder")
         }
     }
+
+    @Published var enabledModules: Set<LayoutModule> {
+        didSet {
+            UserDefaults.standard.set(Array(enabledModules.map(\.rawValue)), forKey: "enabledModules")
+        }
+    }
+
+    /// 1, 2, or 3 rows in the expanded panel grid.
+    @Published var expandedRowCount: Int {
+        didSet { UserDefaults.standard.set(expandedRowCount, forKey: "expandedRowCount") }
+    }
+
+    /// Modules in display order, filtered to only the enabled ones.
+    var orderedEnabledModules: [LayoutModule] {
+        moduleOrder.filter { enabledModules.contains($0) }
+    }
+
+    // MARK: - Init
+
+    private init() {
+        // Phase 1: initialize all backing stores directly so self is fully formed
+        // before any property accessor (didSet) can reference self.
+        let ud = UserDefaults.standard
+
+        let menuIcon = ud.object(forKey: "showMenuBarIcon") != nil
+            ? ud.bool(forKey: "showMenuBarIcon") : true
+        _showMenuBarIcon = Published(wrappedValue: menuIcon)
+
+        _mediaSource = Published(wrappedValue: .spotifyWeb)
+
+        let layout: MusicLayout
+        if let raw = ud.string(forKey: "musicLayout"), let l = MusicLayout(rawValue: raw) {
+            layout = l
+        } else {
+            layout = .artwork
+        }
+        _musicLayout = Published(wrappedValue: layout)
+
+        let hudVol = ud.object(forKey: "hudVolumeEnabled") != nil
+            ? ud.bool(forKey: "hudVolumeEnabled") : false
+        _hudVolumeEnabled = Published(wrappedValue: hudVol)
+
+        let hudBright = ud.object(forKey: "hudBrightnessEnabled") != nil
+            ? ud.bool(forKey: "hudBrightnessEnabled") : false
+        _hudBrightnessEnabled = Published(wrappedValue: hudBright)
+
+        let hudSuppress = ud.object(forKey: "hudSuppressSystem") != nil
+            ? ud.bool(forKey: "hudSuppressSystem") : false
+        _hudSuppressSystem = Published(wrappedValue: hudSuppress)
+
+        // Module order: merge saved with defaults so new modules appear at the end.
+        let order: [LayoutModule]
+        if let arr = ud.array(forKey: "moduleOrder") as? [String] {
+            let saved = arr.compactMap { LayoutModule(rawValue: $0) }
+            let savedSet = Set(saved)
+            let appended = NotchPreferences.defaultModuleOrder.filter { !savedSet.contains($0) }
+            order = saved + appended
+        } else {
+            order = NotchPreferences.defaultModuleOrder
+        }
+        _moduleOrder = Published(wrappedValue: order)
+
+        // Enabled modules.
+        let enabled: Set<LayoutModule>
+        if let arr = ud.array(forKey: "enabledModules") as? [String] {
+            enabled = Set(arr.compactMap { LayoutModule(rawValue: $0) })
+        } else {
+            enabled = NotchPreferences.defaultEnabledModules
+        }
+        _enabledModules = Published(wrappedValue: enabled)
+
+        // Row count.
+        let rowCount: Int
+        if ud.object(forKey: "expandedRowCount") != nil {
+            rowCount = max(1, min(3, ud.integer(forKey: "expandedRowCount")))
+        } else {
+            rowCount = 2
+        }
+        _expandedRowCount = Published(wrappedValue: rowCount)
+
+        // showLyrics: derived from enabled modules (module system is source of truth).
+        _showLyrics = Published(wrappedValue: enabled.contains(.lyrics))
+    }
+
+    // MARK: - Launch at login
 
     /// Reads the real SMAppService registration state; setter registers/unregisters.
     /// Reflects actual state so the toggle never lies, even in unsigned builds where
@@ -109,5 +205,26 @@ final class NotchPreferences: ObservableObject {
             }
             objectWillChange.send()
         }
+    }
+
+    // MARK: - Layout helpers
+
+    /// Toggle a module's enabled state and keep showLyrics in sync.
+    func toggleModule(_ module: LayoutModule) {
+        if enabledModules.contains(module) {
+            enabledModules.remove(module)
+        } else {
+            enabledModules.insert(module)
+        }
+        if module == .lyrics {
+            showLyrics = enabledModules.contains(.lyrics)
+        }
+    }
+
+    func resetLayoutToDefaults() {
+        moduleOrder = NotchPreferences.defaultModuleOrder
+        enabledModules = NotchPreferences.defaultEnabledModules
+        expandedRowCount = 2
+        showLyrics = false
     }
 }
