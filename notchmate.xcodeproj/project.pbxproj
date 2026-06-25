@@ -39,6 +39,11 @@
 		2222222222222222222222F1 /* HUDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111E1 /* HUDController.swift */; };
 		2222222222222222222222F2 /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111E2 /* HUDView.swift */; };
 		2222222222222222222222FC /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111F2 /* Theme.swift */; };
+		DCDC000000000000000000B1 /* DuckyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A1 /* DuckyView.swift */; };
+		DCDC000000000000000000B2 /* MascotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A2 /* MascotView.swift */; };
+		DCDC000000000000000000B3 /* MascotPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A3 /* MascotPane.swift */; };
+		DCDC000000000000000000B4 /* ducky_2_spritesheet.png in Resources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A4 /* ducky_2_spritesheet.png */; };
+		DCDC000000000000000000B5 /* ducky_3_spritesheet.png in Resources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A5 /* ducky_3_spritesheet.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -76,6 +81,11 @@
 		1111111111111111111111E2 /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDs/HUDView.swift; sourceTree = "<group>"; };
 		1111111111111111111111F2 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		1111111111111111111111C2 /* notchmate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = notchmate.entitlements; sourceTree = "<group>"; };
+		DCDC000000000000000000A1 /* DuckyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/DuckyView.swift; sourceTree = "<group>"; };
+		DCDC000000000000000000A2 /* MascotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MascotView.swift; sourceTree = "<group>"; };
+		DCDC000000000000000000A3 /* MascotPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/MascotPane.swift; sourceTree = "<group>"; };
+		DCDC000000000000000000A4 /* ducky_2_spritesheet.png */ = {isa = PBXFileReference; lastKnownFileType = "image.png"; path = Mochi/ducky_2_spritesheet.png; sourceTree = "<group>"; };
+		DCDC000000000000000000A5 /* ducky_3_spritesheet.png */ = {isa = PBXFileReference; lastKnownFileType = "image.png"; path = Mochi/ducky_3_spritesheet.png; sourceTree = "<group>"; };
 		3333333333333333333333C1 /* notchmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = notchmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -135,6 +145,11 @@
 				1111111111111111111111F2 /* Theme.swift */,
 				1111111111111111111111C2 /* notchmate.entitlements */,
 				1111111111111111111111A7 /* Info.plist */,
+				DCDC000000000000000000A1 /* DuckyView.swift */,
+				DCDC000000000000000000A2 /* MascotView.swift */,
+				DCDC000000000000000000A3 /* MascotPane.swift */,
+				DCDC000000000000000000A4 /* ducky_2_spritesheet.png */,
+				DCDC000000000000000000A5 /* ducky_3_spritesheet.png */,
 			);
 			path = notchmate;
 			sourceTree = "<group>";
@@ -205,6 +220,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DCDC000000000000000000B4 /* ducky_2_spritesheet.png in Resources */,
+				DCDC000000000000000000B5 /* ducky_3_spritesheet.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -247,6 +264,9 @@
 				2222222222222222222222F1 /* HUDController.swift in Sources */,
 				2222222222222222222222F2 /* HUDView.swift in Sources */,
 				2222222222222222222222FC /* Theme.swift in Sources */,
+				DCDC000000000000000000B1 /* DuckyView.swift in Sources */,
+				DCDC000000000000000000B2 /* MascotView.swift in Sources */,
+				DCDC000000000000000000B3 /* MascotPane.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

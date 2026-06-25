@@ -359,6 +359,31 @@ private struct Arc: Shape {
     }
 }
 
+// MARK: - Settings preview helper
+
+/// Standalone animated Mochi preview for use in Settings without live controllers.
+struct MochiPreviewView: View {
+    var mood: MochiMood = .dancing
+    var expanded: Bool = true
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let bh: CGFloat = expanded ? 46 : 20
+        Group {
+            if reduceMotion {
+                MochiBody(mood: mood, pose: .still(for: mood), bodyH: bh, expanded: expanded)
+            } else {
+                TimelineView(.animation) { tl in
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    MochiBody(mood: mood, pose: .at(t, for: mood), bodyH: bh, expanded: expanded)
+                }
+            }
+        }
+        .frame(width: bh * 1.55, height: bh * 1.62)
+    }
+}
+
 #if DEBUG
 #Preview("Mochi moods") {
     MochiMood.runDeriveSelfCheck() // fails loudly in the canvas if the priority rule regresses
