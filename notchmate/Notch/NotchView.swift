@@ -9,11 +9,13 @@ struct NotchView: View {
     @ObservedObject var git: GitController
     @ObservedObject var focus: FocusTimerController
     @ObservedObject var stats: SystemStatsController
+    @ObservedObject var lyrics: LyricsController
     let hasNotch: Bool
     let topInset: CGFloat
     let onHoverChange: (Bool) -> Void
 
     @State private var hovering = false
+    @ObservedObject private var prefs = NotchPreferences.shared
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -50,6 +52,9 @@ struct NotchView: View {
                     Spacer(minLength: 0)
                 }
                 MediaWidget(media: media, expanded: true)
+                if prefs.showLyrics {
+                    LyricsWidget(lyrics: lyrics, expanded: true)
+                }
                 divider
                 FocusTimerWidget(timer: focus, expanded: true)
                 if git.state != nil {

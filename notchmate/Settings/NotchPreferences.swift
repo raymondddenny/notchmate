@@ -29,6 +29,10 @@ final class NotchPreferences: ObservableObject {
         didSet { UserDefaults.standard.set(musicLayout.rawValue, forKey: "musicLayout") }
     }
 
+    @Published var showLyrics: Bool {
+        didSet { UserDefaults.standard.set(showLyrics, forKey: "showLyrics") }
+    }
+
     private init() {
         if UserDefaults.standard.object(forKey: "showMenuBarIcon") != nil {
             showMenuBarIcon = UserDefaults.standard.bool(forKey: "showMenuBarIcon")
@@ -48,6 +52,12 @@ final class NotchPreferences: ObservableObject {
             musicLayout = layout
         } else {
             musicLayout = .artwork
+        }
+
+        if UserDefaults.standard.object(forKey: "showLyrics") != nil {
+            showLyrics = UserDefaults.standard.bool(forKey: "showLyrics")
+        } else {
+            showLyrics = false
         }
     }
 

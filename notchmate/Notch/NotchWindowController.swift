@@ -12,6 +12,7 @@ final class NotchWindowController {
     private let git: GitController
     private let focus = FocusTimerController()
     private let stats = SystemStatsController()
+    private let lyrics = LyricsController()
     private let isExpanded = CurrentValueSubject<Bool, Never>(false)
     private var cancellables = Set<AnyCancellable>()
     // Deferred collapse task: absorbs transient mouseExited events that AppKit fires
@@ -55,6 +56,7 @@ final class NotchWindowController {
             git: git,
             focus: focus,
             stats: stats,
+            lyrics: lyrics,
             hasNotch: geometry.hasNotch,
             topInset: geometry.topInset,
             onHoverChange: { [weak self] hovering in
@@ -71,16 +73,17 @@ final class NotchWindowController {
         // (Claude session list, git block) so nothing is clipped and idle leaves no dead
         // space. Timer/stats blocks are always shown, so their content changes don't
         // affect height.
-        Publishers.Merge(
-            claude.$sessions.map { _ in () },
-            git.$state.map { _ in () }
-        )
-        .receive(on: RunLoop.main)
-        .sink { [weak self] _ in
-            guard let self, self.isExpanded.value else { return }
-            self.positionPanel(size: self.currentExpandedSize, animated: true)
-        }
-        .store(in: &cancellables)
+        claude.$sessions
+            .map { _ in () }
+            .merge(with: git.$state.map { _ in () })
+            .merge(with: NotchPreferences.shared.$showLyrics.map { _ in () })
+            .merge(with: lyrics.$state.map { $0.isPresent }.removeDuplicates().map { _ in () })
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.isExpanded.value else { return }
+                self.positionPanel(size: self.currentExpandedSize, animated: true)
+            }
+            .store(in: &cancellables)
     }
 
     func show() {
@@ -90,6 +93,7 @@ final class NotchWindowController {
         git.start()
         // FocusTimerController has no polling to start; its start() is the user action.
         stats.start()
+        lyrics.start(media: media)
     }
 
     /// Extra expanded height beyond the base (Mochi + Spotify) block, summed per widget:
@@ -102,7 +106,10 @@ final class NotchWindowController {
         let gitExtra: CGFloat = git.state != nil ? 46 : 0
         let timerExtra: CGFloat = 56
         let statsExtra: CGFloat = 56
-        return geometry.expandedSize(extraHeight: claudeExtra + gitExtra + timerExtra + statsExtra)
+        let prefs = NotchPreferences.shared
+        // Lyrics block: 5 visible lines at ~18px + spacing, only when a track is loaded.
+        let lyricsExtra: CGFloat = prefs.showLyrics && lyrics.state.isPresent ? 108 : 0
+        return geometry.expandedSize(extraHeight: claudeExtra + gitExtra + timerExtra + statsExtra + lyricsExtra)
     }
 
     // MARK: - Hover handling
