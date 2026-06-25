@@ -33,6 +33,29 @@ Scanning runs on a background queue every ~3 seconds and publishes to the UI on 
 **Limitations:** this slice is detect-and-count only. There is no working-vs-waiting status, no cost tracking, and no fleet view (those are later/premium slices).
 If `lsof` cannot resolve a process's directory, that session still counts but is grouped under a generic `session` label.
 
+## Slice 3 (current)
+
+**Mochi**, an original reactive mascot that lives in the notch beside the other widgets (free-tier).
+
+It is a small, code-drawn mochi-style robot: a soft cream blob body with a tiny face and a single glowing antenna.
+The character is our own design - not based on any existing or branded character - and is drawn entirely with SwiftUI shapes and animated with SwiftUI (no images, no Lottie, no third-party deps).
+
+It reacts to what the rest of the app is doing:
+
+- **Dancing** - when Spotify is actively playing: it bobs and wobbles to a lively beat, eyes happy (`⌒⌒`), open "singing" mouth, antenna pulsing green. (Expanded: a `♪` note floats beside it.)
+- **Thinking** - when one or more Claude Code sessions are running: an attentive upright pose with a blinking orange antenna and round eyes. (Expanded: three chasing dots above its head.)
+- **Idle** - when a track is loaded but paused (nothing actively happening): calm slow breathing, round blinking eyes, a gentle smile, soft cyan antenna.
+- **Sleeping** - when nothing is happening at all (no music, no sessions): eyes shut (`‿‿`), slow deep breaths, antenna dimmed. (Expanded: drifting `z z`.)
+
+Mood is derived from the existing Spotify and Claude controllers with a simple priority: **dancing > thinking > idle > sleeping** (so music wins when both music and sessions are live).
+Transitions between moods are animated (face features crossfade, the antenna recolors) rather than snapping.
+The mascot honors **Reduce Motion**: when it is enabled the looping animation is dropped for a calm static pose.
+
+It stays small when collapsed so it does not crowd the Spotify/Claude widgets, and grows more expressive when the notch is expanded on hover - in both the notch and the non-notch pill layout.
+
+**Limitation / extension point:** the app currently only knows the session *count*, not whether a session is actively working vs. waiting on you, so `thinking` reacts to "sessions present".
+When a finer Claude signal exists, the mood-derivation function (`MochiMood.derive`) is the single place to branch on it.
+
 ### Permissions
 
 No special entitlement is required: `ps` and `lsof` report on the user's own processes, and `notchmate` runs as that user.
@@ -99,6 +122,7 @@ notchmate/
   Notch/          - NSPanel shell, screen/notch geometry, root SwiftUI view
   Spotify/        - Spotify AppleScript polling + the now-playing widget
   ClaudeSessions/ - claude-process detection + the session-count widget
+  Mochi/          - the reactive mascot (mood model + code-drawn SwiftUI view)
 ```
 
 Feature widgets are isolated per folder so future **premium** features (notifications, multi-agent fleet view, themes) can be added as self-contained widgets gated behind a license check, without touching the notch shell. See `AGENTS.md`.
