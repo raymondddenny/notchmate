@@ -37,9 +37,28 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - **Top-anchor invariant:** `positionPanel` always computes `originY = screen.maxY - size.height - topGap`, so `originY + height = screen.maxY - topGap` is constant regardless of panel size. This pins the top edge under the notch and makes the panel grow downward. Any refactor that changes `originY` without preserving this invariant will break the anchor.
 
 
-- AppleScript MUST guard every call with `if application "Spotify" is running` - a bare `tell application "Spotify"` auto-launches Spotify. The guard also keeps a closed Spotify silent (idle state, no error spam).
-- `NSAppleScript` runs on a dedicated serial queue (not main); results published back to main. Artwork is fetched from `artwork url` and cached per track id.
-- Automation TCC prompt fires on first transport/poll; `NSAppleEventsUsageDescription` is set in Info.plist.
-- Claude session detection needs NO TCC permission, but it DOES depend on the app being **un-sandboxed** (no App Sandbox entitlement): enabling App Sandbox would block enumerating other users'/processes' info via `ps`/`lsof` and silently zero the count. The controller swallows all `ps`/`lsof` launch/exit failures and degrades to "no sessions" - never throws or spams.
-- `GitController` invokes `/usr/bin/git`. On a machine without Xcode Command Line Tools this shim exits non-zero / empty; `read()` gates on a non-empty `rev-parse --show-toplevel` and returns `nil`, so the widget just hides. It only checks `terminationStatus == 0` per call - no error spam.
-- Focus timer notifications use `UNUserNotificationCenter`, which needs a real bundle id (we have `com.notchmate.app`). Authorization is requested lazily on first Start; denial is ignored (countdown still works). For local **unsigned** builds the banner may not appear until the app is signed/trusted - the timer logic is unaffected. No Info.plist key is required for local notifications.
+- AppleScript MUST guard every call with `if application "Spotify" is running` - a bare `tell application "Spotify"` auto-launches Spotify.
+The guard also keeps a closed Spotify silent (idle state, no error spam).
+- `NSAppleScript` runs on a dedicated serial queue (not main); results published back to main.
+Artwork is fetched from `artwork url` and cached per track id.
+- **Spotify Automation TCC flow:** the TCC prompt fires on the first poll where Spotify is running (the `tell application "Spotify"` block sends the Apple Event).
+`NSAppleEventsUsageDescription` is set in Info.plist.
+`SpotifyController.executeScript` logs all errors with `NSLog("[SpotifyController] AppleScript error %d: %@")` so failures are diagnosable in Console.app.
+Error -1743 (`errAEEventNotPermitted`) means TCC was explicitly denied; `SpotifyController.permissionDenied` is set to `true` and `SpotifyWidget.idleView` shows "Allow Spotify access in System Settings" rather than "Nothing playing".
+Do NOT swallow -1743 as idle state - the two are semantically different and the widget must surface the distinction.
+If TCC is denied after the first prompt, the user must re-enable under **System Settings > Privacy & Security > Automation > notchmate > Spotify**.
+- **FocusTimerController.start() is the user action, not a controller init:** `FocusTimerController` has no background polling; its `start()` method begins the countdown and is called by user interaction only.
+Do NOT call `focus.start()` from `NotchWindowController.show()` - that bug caused the Pomodoro to auto-start on launch.
+The controller needs no explicit initialization; it is fully ready from its property defaults.
+- **Claude session branch resolution:** `ClaudeSessionsController.detect()` calls `resolveBranches` after `resolveCwds`, running one `git -C <dir> rev-parse --abbrev-ref HEAD` per session dir.
+`ClaudeSession` carries `branch: String?`; detached HEAD and non-git dirs produce `nil` (the widget omits the branch label).
+The expanded widget shows individual sessions (not project groups) with project name + branch in monospaced accent text.
+`NotchWindowController.currentExpandedSize` uses `claude.count` (session count) not `claude.groups.count` for height calculation.
+- Claude session detection needs NO TCC permission, but it DOES depend on the app being **un-sandboxed** (no App Sandbox entitlement): enabling App Sandbox would block enumerating other users'/processes' info via `ps`/`lsof` and silently zero the count.
+The controller swallows all `ps`/`lsof` launch/exit failures and degrades to "no sessions" - never throws or spams.
+- `GitController` invokes `/usr/bin/git`. On a machine without Xcode Command Line Tools this shim exits non-zero / empty; `read()` gates on a non-empty `rev-parse --show-toplevel` and returns `nil`, so the widget just hides.
+It only checks `terminationStatus == 0` per call - no error spam.
+- Focus timer notifications use `UNUserNotificationCenter`, which needs a real bundle id (we have `com.notchmate.app`).
+Authorization is requested lazily on first Start; denial is ignored (countdown still works).
+For local **unsigned** builds the banner may not appear until the app is signed/trusted - the timer logic is unaffected.
+No Info.plist key is required for local notifications.
