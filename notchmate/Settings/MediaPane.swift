@@ -43,7 +43,13 @@ struct MediaPane: View {
                     Text("Compact (text only)").tag(MusicLayout.compact)
                 }
                 .pickerStyle(.radioGroup)
-                // ponytail: lyrics layout is a separate later task — add a third case here
+            }
+
+            Section("Lyrics") {
+                Toggle("Show synced lyrics", isOn: $prefs.showLyrics)
+                Text("Fetches time-synced lyrics from LRCLIB (lrclib.net) - free, no account needed. Highlights the current line while the song plays. Spotify source only for line sync; plain lyrics shown for other sources.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
