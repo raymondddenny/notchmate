@@ -8,6 +8,7 @@ import Combine
 final class NotchWindowController {
     private let panel: NotchPanel
     private let spotify = SpotifyController()
+    private let claude = ClaudeSessionsController()
     private let isExpanded = CurrentValueSubject<Bool, Never>(false)
     private var cancellables = Set<AnyCancellable>()
 
@@ -24,8 +25,10 @@ final class NotchWindowController {
             // Wide enough to flank the notch with a glanceable strip beneath it.
             NSSize(width: max(notchWidth + 160, 260), height: notchHeight + 36)
         }
-        var expandedSize: NSSize {
-            NSSize(width: 380, height: notchHeight + 168)
+        /// Base expanded size (Spotify block only). Per-feature additions are layered
+        /// on by the controller so the geometry math stays feature-agnostic.
+        func expandedSize(extraHeight: CGFloat) -> NSSize {
+            NSSize(width: 380, height: notchHeight + 168 + extraHeight)
         }
         /// Top inset before content starts (reserves the physical notch region).
         var topInset: CGFloat { notchHeight }
@@ -39,6 +42,7 @@ final class NotchWindowController {
 
         let root = NotchView(
             spotify: spotify,
+            claude: claude,
             hasNotch: geometry.hasNotch,
             topInset: geometry.topInset,
             onHoverChange: { [weak self] hovering in
@@ -50,11 +54,30 @@ final class NotchWindowController {
         panel.contentView = hosting
 
         positionPanel(size: geometry.collapsedSize)
+
+        // While expanded, re-fit the panel as sessions appear/disappear so the list
+        // is never clipped and idle leaves no dead space.
+        claude.$sessions
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.isExpanded.value else { return }
+                self.positionPanel(size: self.currentExpandedSize, animated: true)
+            }
+            .store(in: &cancellables)
     }
 
     func show() {
         panel.orderFrontRegardless()
         spotify.start()
+        claude.start()
+    }
+
+    /// Extra expanded height for the Claude block: header + up to 3 project rows
+    /// (the widget caps the list and folds the rest into a "+N more" line).
+    private var currentExpandedSize: NSSize {
+        let rows = min(claude.groups.count, 3) + (claude.groups.count > 3 ? 1 : 0)
+        let extra: CGFloat = claude.count > 0 ? CGFloat(34 + rows * 18) : 0
+        return geometry.expandedSize(extraHeight: extra)
     }
 
     // MARK: - Expand / collapse
@@ -62,7 +85,7 @@ final class NotchWindowController {
     private func setExpanded(_ expanded: Bool) {
         guard isExpanded.value != expanded else { return }
         isExpanded.send(expanded)
-        let size = expanded ? geometry.expandedSize : geometry.collapsedSize
+        let size = expanded ? currentExpandedSize : geometry.collapsedSize
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.22
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)

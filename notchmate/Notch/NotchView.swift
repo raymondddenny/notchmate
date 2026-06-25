@@ -5,6 +5,7 @@ import SwiftUI
 /// window controller can resize the panel.
 struct NotchView: View {
     @ObservedObject var spotify: SpotifyController
+    @ObservedObject var claude: ClaudeSessionsController
     let hasNotch: Bool
     let topInset: CGFloat
     let onHoverChange: (Bool) -> Void
@@ -18,7 +19,7 @@ struct NotchView: View {
             // beneath it. On pill Macs topInset is 0.
             VStack(spacing: 0) {
                 Color.clear.frame(height: topInset)
-                SpotifyWidget(spotify: spotify, expanded: hovering)
+                content
                     .padding(.horizontal, 12)
                     .padding(.bottom, 10)
                     .padding(.top, hasNotch ? 2 : 8)
@@ -31,6 +32,28 @@ struct NotchView: View {
             onHoverChange(isHovering)
         }
         .animation(.easeOut(duration: 0.22), value: hovering)
+    }
+
+    // Each widget owns its own collapsed/expanded rendering; the shell only chooses
+    // the container. Collapsed: a single strip (Claude count trails the Spotify
+    // glance). Expanded: stacked blocks. Widgets render nothing when they have no
+    // content, so neither knows or depends on the other.
+    @ViewBuilder
+    private var content: some View {
+        if hovering {
+            VStack(alignment: .leading, spacing: 10) {
+                SpotifyWidget(spotify: spotify, expanded: true)
+                if claude.count > 0 {
+                    Divider().overlay(Color.white.opacity(0.1))
+                    ClaudeSessionsWidget(sessions: claude, expanded: true)
+                }
+            }
+        } else {
+            HStack(spacing: 10) {
+                SpotifyWidget(spotify: spotify, expanded: false)
+                ClaudeSessionsWidget(sessions: claude, expanded: false)
+            }
+        }
     }
 
     private var background: some View {

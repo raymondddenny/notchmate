@@ -14,6 +14,31 @@ A minimal notch-app skeleton with a Spotify now-playing widget:
 - On Macs **without** a physical notch, the same content renders as a floating rounded pill centered at the top of the screen.
 - Spotify is polled over AppleScript about once per second. When Spotify is closed or idle, a clean "Nothing playing" state is shown (no crashes, no error spam, and Spotify is never auto-launched).
 
+## Slice 2 (current)
+
+A live **Claude Code session** indicator, free-tier, in its own widget next to Spotify:
+
+- **Collapsed:** a small glyph + count of running Claude Code sessions. Hidden entirely when there are none.
+- **Expanded** (on hover): a short per-project list (e.g. `notchmate`, `firstmate ×3`), capped to a few rows with a `+N more` line.
+- Running sessions are detected by enumerating live `claude` processes (see [How sessions are detected](#how-sessions-are-detected)). The count updates within a few seconds as sessions start and stop.
+- With zero sessions the indicator simply disappears - no crash, no error spam.
+
+### How sessions are detected
+
+A session is a live `claude` process: `notchmate` lists processes with `ps` and keeps those whose executable (argv[0]) is `claude`.
+Transient subcommand invocations such as `claude mcp login` are excluded (their first argument is a bareword, not a flag), so the count reflects interactive sessions rather than CLI helpers.
+For each session the project name is the basename of the process's working directory, resolved with `lsof`.
+Scanning runs on a background queue every ~3 seconds and publishes to the UI on the main thread.
+
+**Limitations:** this slice is detect-and-count only. There is no working-vs-waiting status, no cost tracking, and no fleet view (those are later/premium slices).
+If `lsof` cannot resolve a process's directory, that session still counts but is grouped under a generic `session` label.
+
+### Permissions
+
+No special entitlement is required: `ps` and `lsof` report on the user's own processes, and `notchmate` runs as that user.
+The app is sandbox-free (no App Sandbox entitlement), which is what allows it to spawn `ps`/`lsof`; if it were ever sandboxed, process enumeration of other processes would be blocked.
+If process enumeration ever fails it degrades silently to "no sessions".
+
 ## Requirements
 
 - macOS 14 (Sonoma) or later
@@ -71,8 +96,9 @@ Click **OK**. If you dismiss it, the widget stays in the idle state - re-enable 
 ```
 notchmate/
   App/        - app entry point + AppDelegate (sets up the panel)
-  Notch/      - NSPanel shell, screen/notch geometry, root SwiftUI view
-  Spotify/    - Spotify AppleScript polling + the now-playing widget
+  Notch/          - NSPanel shell, screen/notch geometry, root SwiftUI view
+  Spotify/        - Spotify AppleScript polling + the now-playing widget
+  ClaudeSessions/ - claude-process detection + the session-count widget
 ```
 
 Feature widgets are isolated per folder so future **premium** features (notifications, multi-agent fleet view, themes) can be added as self-contained widgets gated behind a license check, without touching the notch shell. See `AGENTS.md`.
