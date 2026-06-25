@@ -88,7 +88,7 @@ final class NotchWindowController {
         spotify.start()
         claude.start()
         git.start()
-        focus.start()
+        // FocusTimerController has no polling to start; its start() is the user action.
         stats.start()
     }
 
@@ -97,7 +97,7 @@ final class NotchWindowController {
     /// - Claude block: header + up to 3 project rows (rest folds into "+N more").
     /// - Git block: one two-line row, only when a repo is in context.
     private var currentExpandedSize: NSSize {
-        let rows = min(claude.groups.count, 3) + (claude.groups.count > 3 ? 1 : 0)
+        let rows = min(claude.count, 3) + (claude.count > 3 ? 1 : 0)
         let claudeExtra: CGFloat = claude.count > 0 ? CGFloat(34 + rows * 18) : 0
         let gitExtra: CGFloat = git.state != nil ? 46 : 0
         let timerExtra: CGFloat = 56
