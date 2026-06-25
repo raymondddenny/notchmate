@@ -44,8 +44,10 @@ final class LyricsController: ObservableObject {
     private var cache: [String: LyricsState] = [:]
     private var syncedLines: [LyricLine] = []
     private var currentTrackID: String?
+    private weak var mediaController: MediaController?
 
     func start(media: MediaController) {
+        mediaController = media
         let prefs = NotchPreferences.shared
 
         media.$nowPlaying
@@ -70,13 +72,14 @@ final class LyricsController: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // When source switches from Spotify, stop position polling (can't get position).
-        // When switching back to Spotify with synced lyrics loaded, resume polling.
+        // When source switches to a non-Spotify source, stop position polling.
+        // Spotify (both AppleScript and Web API) support position queries.
         prefs.$mediaSource
             .receive(on: DispatchQueue.main)
             .sink { [weak self] src in
                 guard let self else { return }
-                if src != .spotify {
+                let supportsPosition = (src == .spotify || src == .spotifyWeb)
+                if !supportsPosition {
                     self.stopPositionPolling()
                 } else if case .synced = self.state {
                     self.startPositionPolling()
@@ -100,7 +103,8 @@ final class LyricsController: ObservableObject {
         currentTrackID = trackID
         if let cached = cache[trackID] {
             apply(cached)
-            if case .synced = cached, source == .spotify { startPositionPolling() }
+            let supportsPosition = source == .spotify || source == .spotifyWeb
+            if case .synced = cached, supportsPosition { startPositionPolling() }
             return
         }
         state = .loading
@@ -149,7 +153,8 @@ final class LyricsController: ObservableObject {
         // Discard if track changed while fetch was in flight, or lyrics toggled off.
         guard currentTrackID == trackID, NotchPreferences.shared.showLyrics else { return }
         apply(result)
-        if case .synced = result, source == .spotify { startPositionPolling() }
+        let supportsPosition = source == .spotify || source == .spotifyWeb
+        if case .synced = result, supportsPosition { startPositionPolling() }
     }
 
     private func apply(_ newState: LyricsState) {
@@ -176,14 +181,26 @@ final class LyricsController: ObservableObject {
     private func pollPosition() {
         let lines = syncedLines
         guard !lines.isEmpty else { return }
-        scriptQueue.async { [weak self] in
-            let pos = Self.spotifyPosition()
+        let source = NotchPreferences.shared.mediaSource
+        if source == .spotifyWeb {
+            // Web API: position is interpolated from last poll - no blocking call needed.
+            let pos = mediaController?.spotifyWeb.estimatedProgressSeconds() ?? -1
             guard pos >= 0 else { return }
             let idx = Self.currentIndex(for: pos, in: lines)
-            DispatchQueue.main.async {
-                guard let self else { return }
-                if case .synced(let l, let cur) = self.state, l == lines, cur != idx {
-                    self.state = .synced(lines: l, currentIndex: idx)
+            if case .synced(let l, let cur) = state, l == lines, cur != idx {
+                state = .synced(lines: l, currentIndex: idx)
+            }
+        } else {
+            // AppleScript path: blocking call, runs on dedicated queue.
+            scriptQueue.async { [weak self] in
+                let pos = Self.spotifyPosition()
+                guard pos >= 0 else { return }
+                let idx = Self.currentIndex(for: pos, in: lines)
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    if case .synced(let l, let cur) = self.state, l == lines, cur != idx {
+                        self.state = .synced(lines: l, currentIndex: idx)
+                    }
                 }
             }
         }

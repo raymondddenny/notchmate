@@ -226,7 +226,55 @@ If macOS still refuses to open it, go to **System Settings > Privacy & Security*
 > Without these, macOS 26 silently blocks all outgoing Apple Events before TCC can record or prompt - the Spotify widget stays stuck on "Nothing playing" and the app never appears in System Settings > Privacy & Security > Automation.
 > Ad-hoc signing (`--sign -`) is free; no developer account needed.
 
-### Automation permission (first run)
+### Spotify Web API source (recommended on macOS 26)
+
+The **Spotify (Web API)** source uses OAuth 2.0 + PKCE over HTTPS.
+It requires no Automation/TCC permission and cannot be blocked by macOS entitlement restrictions.
+This is the recommended source on macOS 26, where the AppleScript path requires careful ad-hoc signing.
+
+**How to connect:**
+
+1. Open **Settings > Media**.
+2. Select **Spotify (Web API) - Recommended**.
+3. Click **Connect Spotify**.
+4. Your default browser opens the Spotify authorization page.
+5. Log in and click **Agree**.
+6. The browser shows "Spotify connected - return to notchmate".
+7. The notch immediately shows the live track.
+
+**What it requests:**
+
+| Scope | Why |
+|-------|-----|
+| `user-read-playback-state` | Read current track, progress, and play/pause state |
+| `user-read-currently-playing` | Read the currently playing item |
+| `user-modify-playback-state` | Send play/pause/next/previous controls |
+
+**Tokens:**
+The `access_token` and `refresh_token` are stored in the **macOS Keychain** under the service name `notchmate.spotify.webapi`.
+They are never written to disk, logged, or stored in UserDefaults.
+The token expiry timestamp (not sensitive) is stored in UserDefaults.
+Tokens auto-refresh ~60 seconds before expiry; no hourly re-login.
+
+**Premium:**
+Reading now-playing works on any Spotify account (Free or Premium).
+Playback controls (play/pause/next/previous) require a Spotify Premium account.
+On a Free account, the controls are dimmed and a "Spotify Premium required" hint is shown; the widget continues showing the current track.
+
+**Configuration (for developers):**
+The OAuth client ID is `5a058e7eb1b140a1a4b97bd801fc8734` (a public client - PKCE requires no secret).
+The redirect URI is `http://127.0.0.1:8888/callback` (loopback - registered in the Spotify app dashboard).
+Both are defined as constants in `notchmate/Spotify/SpotifyWebController.swift` under `SpotifyWebConfig`.
+If you fork and register your own Spotify app, update those two values.
+
+**To disconnect:**
+Settings > Media > Disconnect.
+This deletes the tokens from Keychain and clears the session.
+
+### AppleScript Spotify source (fallback)
+
+The **Spotify (AppleScript)** source polls the Spotify desktop app once per second over AppleScript.
+It requires Automation/TCC permission and the hardened runtime entitlement.
 
 **Prerequisite:** the binary must be ad-hoc signed (see the `codesign` step in [Build](#build) above).
 Without a signature, macOS TCC has no stable identity to prompt for, and the Spotify permission never appears.
@@ -261,12 +309,12 @@ The first time you press **Start** on the focus timer, macOS asks to allow notif
 
 Open Settings with the menu-bar icon (⌘,) or via the status-bar item.
 
-| Pane    | Controls                                                                                                                   |
-|---------|----------------------------------------------------------------------------------------------------------------------------|
-| General | Show menu-bar icon toggle; Launch at login (`SMAppService`)                                                                |
-| Media   | **Music source** (Spotify only / Now Playing any app); **Layout** (with artwork thumbnail / compact text-only)            |
-| HUDs    | Volume HUD toggle; Brightness HUD toggle; Replace system HUD toggle (suppresses OSDUIHelper via launchctl)                 |
-| About   | Version, build, link to this repo                                                                                          |
+| Pane    | Controls                                                                                                                                   |
+|---------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| General | Show menu-bar icon toggle; Launch at login (`SMAppService`)                                                                                |
+| Media   | **Music source** (Spotify Web API / Spotify AppleScript / Now Playing any app); Connect/Disconnect Spotify Web API; **Layout**; **Lyrics** |
+| HUDs    | Volume HUD toggle; Brightness HUD toggle; Replace system HUD toggle (suppresses OSDUIHelper via launchctl)                                 |
+| About   | Version, build, link to this repo                                                                                                          |
 
 **Show menu-bar icon** persists in `UserDefaults`.
 When hidden, the icon is removed from the system status bar; it can be restored by toggling back on in a Settings window already open.
@@ -285,7 +333,7 @@ notchmate/
   Notch/          - NSPanel shell, screen/notch geometry, root SwiftUI view
   Settings/       - preferences store, settings window, all panes
   Media/          - MediaController (aggregates Spotify + system NowPlaying sources)
-  Spotify/        - SpotifyController (AppleScript polling) + MediaWidget (now-playing UI)
+  Spotify/        - SpotifyController (AppleScript polling) + SpotifyWebController (Web API + PKCE OAuth) + MediaWidget (now-playing UI)
   ClaudeSessions/ - claude-process detection + the session-count widget
   Mochi/          - the reactive mascot (mood model + code-drawn SwiftUI view)
   Git/            - focused-repo branch/dirty glance (git via Process)

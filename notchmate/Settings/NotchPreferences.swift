@@ -4,6 +4,7 @@ import ServiceManagement
 
 enum MediaSource: String {
     case spotify    = "spotify"
+    case spotifyWeb = "spotifyWeb"
     case nowPlaying = "nowPlaying"
 }
 
