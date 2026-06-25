@@ -11,6 +11,10 @@ final class FocusTimerController: ObservableObject {
 
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var remaining: Int = FocusTimerController.workDuration
+    /// True for ~2s after a work interval reaches zero. Drives the in-tile celebration overlay.
+    @Published private(set) var showingCelebration = false
+    /// Streak value captured at the moment of completion (used by the celebration overlay).
+    @Published private(set) var celebrationStreak: Int = 0
 
     static let workDuration = 25 * 60   // seconds
 
@@ -36,6 +40,7 @@ final class FocusTimerController: ObservableObject {
 
     func start() {
         requestAuthIfNeeded()
+        showingCelebration = false
         if remaining <= 0 { remaining = Self.workDuration }
         phase = .running
         restartTicker()
@@ -73,6 +78,15 @@ final class FocusTimerController: ObservableObject {
         timer?.invalidate(); timer = nil
         phase = .idle
         remaining = Self.workDuration
+
+        let prefs = NotchPreferences.shared
+        prefs.recordCompletedSession()
+        celebrationStreak = prefs.focusCurrentStreak
+        showingCelebration = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.showingCelebration = false
+        }
+
         notify()
     }
 
@@ -84,8 +98,11 @@ final class FocusTimerController: ObservableObject {
 
     private func notify() {
         let content = UNMutableNotificationContent()
-        content.title = "Focus complete"
-        content.body = "Your 25-minute focus session is done. Take a break."
+        let streak = celebrationStreak
+        content.title = streak > 1 ? "Focus complete \u{1F525}" : "Focus complete"
+        content.body = streak > 1
+            ? "Session done. \(streak)-day streak - keep it up!"
+            : "25-minute session done. Take a break."
         content.sound = .default
         let req = UNNotificationRequest(identifier: "notchmate.focus.\(UUID().uuidString)",
                                         content: content, trigger: nil)

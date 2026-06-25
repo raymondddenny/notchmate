@@ -115,6 +115,60 @@ final class NotchPreferences: ObservableObject {
         didSet { UserDefaults.standard.set(hudSuppressSystem, forKey: "hudSuppressSystem") }
     }
 
+    // MARK: - Focus stats
+
+    /// Per-day session counts keyed by "YYYY-MM-DD". Source of truth for streak, heatmap.
+    @Published var focusDailyHistory: [String: Int] {
+        didSet {
+            if let data = try? JSONEncoder().encode(focusDailyHistory) {
+                UserDefaults.standard.set(data, forKey: "focusDailyHistory")
+            }
+        }
+    }
+
+    /// All-time best streak (consecutive days with >=1 session). Persisted separately
+    /// so it survives even if history is trimmed in the future.
+    @Published var focusBestStreak: Int {
+        didSet { UserDefaults.standard.set(focusBestStreak, forKey: "focusBestStreak") }
+    }
+
+    var focusSessionsToday: Int { focusDailyHistory[Self.dateKey()] ?? 0 }
+    var focusSessionsTotal: Int { focusDailyHistory.values.reduce(0, +) }
+    var focusCurrentStreak: Int { Self.computeStreak(history: focusDailyHistory) }
+
+    /// ISO-8601 date key for `date` (defaults to today). Locale-safe, POSIX calendar.
+    static func dateKey(for date: Date = Date()) -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.calendar = Calendar(identifier: .iso8601)
+        return fmt.string(from: date)
+    }
+
+    /// Consecutive days ending today (inclusive) that have >=1 completed session.
+    static func computeStreak(history: [String: Int]) -> Int {
+        let cal = Calendar(identifier: .iso8601)
+        var streak = 0
+        var day = cal.startOfDay(for: Date())
+        while true {
+            let key = dateKey(for: day)
+            guard (history[key] ?? 0) >= 1 else { break }
+            streak += 1
+            guard let prev = cal.date(byAdding: .day, value: -1, to: day) else { break }
+            day = prev
+        }
+        return streak
+    }
+
+    /// Call this when a focus work interval reaches zero. Increments today's count,
+    /// updates best streak. A completed session = work interval reaches 0; resets/
+    /// abandoned timers must NOT call this.
+    func recordCompletedSession() {
+        focusDailyHistory[Self.dateKey(), default: 0] += 1
+        let s = focusCurrentStreak
+        if s > focusBestStreak { focusBestStreak = s }
+    }
+
     // MARK: - Layout
 
     @Published var moduleOrder: [LayoutModule] {
@@ -208,6 +262,14 @@ final class NotchPreferences: ObservableObject {
 
         // showLyrics: derived from enabled modules (module system is source of truth).
         _showLyrics = Published(wrappedValue: enabled.contains(.lyrics))
+
+        // Focus stats.
+        let focusHistory = ud.data(forKey: "focusDailyHistory")
+            .flatMap { try? JSONDecoder().decode([String: Int].self, from: $0) } ?? [:]
+        _focusDailyHistory = Published(wrappedValue: focusHistory)
+
+        let bestStreak = ud.integer(forKey: "focusBestStreak")
+        _focusBestStreak = Published(wrappedValue: bestStreak)
     }
 
     // MARK: - Launch at login
