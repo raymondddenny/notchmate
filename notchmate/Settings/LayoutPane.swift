@@ -26,9 +26,15 @@ struct LayoutPane: View {
             Section {
                 moduleList
             } header: {
-                Text("Modules")
+                HStack {
+                    Text("Modules")
+                    Spacer()
+                    Text("\(prefs.enabledModules.count) of \(NotchPreferences.maxVisibleModules) shown")
+                        .font(.caption)
+                        .foregroundStyle(prefs.canEnableMoreModules ? Color.secondary : Color.orange)
+                }
             } footer: {
-                Text("Drag to reorder. Order determines placement in the grid.")
+                Text("Up to \(NotchPreferences.maxVisibleModules) modules show in the panel. Drag to reorder; order determines placement in the grid. Disable one to free a slot.")
                     .font(.caption)
             }
 
@@ -53,22 +59,33 @@ struct LayoutPane: View {
             }
         }
         .listStyle(.plain)
-        .frame(minHeight: CGFloat(LayoutModule.allCases.count) * 38)
+        .frame(minHeight: CGFloat(LayoutModule.allCases.count) * 48)
     }
 
     private func moduleRow(_ module: LayoutModule) -> some View {
-        HStack(spacing: 10) {
+        let isOn = prefs.enabledModules.contains(module)
+        // At the cap, only already-enabled rows stay interactive (so they can be turned
+        // off); disabled rows can't be enabled until a slot frees up.
+        let canToggle = isOn || prefs.canEnableMoreModules
+        return HStack(spacing: 10) {
             Image(systemName: module.icon)
                 .frame(width: 18)
-                .foregroundStyle(.secondary)
-            Text(module.displayName)
+                .foregroundStyle(isOn ? Color.accentColor : .secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(module.displayName)
+                Text(module.summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Spacer()
             Toggle("", isOn: Binding(
-                get: { prefs.enabledModules.contains(module) },
+                get: { isOn },
                 set: { _ in prefs.toggleModule(module) }
             ))
             .labelsHidden()
+            .disabled(!canToggle)
         }
         .contentShape(Rectangle())
+        .opacity(canToggle ? 1 : 0.5)
     }
 }
