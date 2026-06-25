@@ -113,6 +113,50 @@ The collapsed strip stays uncluttered by surfacing each new widget only when it 
 
 Full system stats and the timer controls live in the **expanded** panel only. Spotify keeps the flexible middle space (its title truncates), and the compact chips trail it. This holds for both the notch and the non-notch pill layout.
 
+## Slice 6 (current)
+
+**Notch HUDs** - replaces the macOS volume and brightness on-screen overlays with notch-native HUDs (`HUDs/`).
+
+### Volume HUD
+
+Observed via `AudioObjectAddPropertyListenerBlock` on the default output device (volume scalar + mute).
+No permission or entitlement required.
+Fires on any volume change - media keys, Control Center, external mixer.
+When the default audio device changes (headphones plug/unplug), the listener re-attaches automatically.
+
+### Brightness HUD
+
+Polled every 0.1s via `DisplayServicesGetBrightness` from `DisplayServices.framework` (private framework, loaded at runtime via `dlopen`/`dlsym`).
+Changes smaller than 1% are ignored to avoid noise.
+Works on Intel and Apple Silicon.
+**macOS 26 note:** `DisplayServicesGetBrightness` lives in the dyld shared cache; `dlopen` of the framework path still resolves through it.
+If the function is unavailable the brightness HUD silently disables itself.
+
+### HUD display
+
+When a volume or brightness change fires, the collapsed notch strip briefly replaces its normal chip content with a compact icon + level bar + percentage for 1.5s, then crossfades back.
+The HUD does not interrupt the expanded (hover) state.
+
+### System HUD suppression (off by default)
+
+The native macOS volume/brightness overlay is drawn by `OSDUIHelper`, a user-level Launch Agent.
+When "Replace system volume/brightness HUD" is enabled in Settings > HUDs, notchmate stops it via:
+
+```sh
+launchctl bootout gui/<uid>/com.apple.OSDUIHelper
+```
+
+And re-enables it via:
+
+```sh
+launchctl bootstrap gui/<uid> /System/Library/LaunchAgents/com.apple.OSDUIHelper.plist
+```
+
+Restoration runs when the toggle is switched off, or automatically when the app quits (via `NSApplication.willTerminateNotification`).
+**Default:** OFF.
+**macOS 26 caveat:** if the plist has moved or the service is protected, `bootout` will fail silently (logged to Console.app as `[HUDController] bootout failed`), leaving the native HUD intact.
+The toggle is disabled in HUDs settings when the plist is not found at the expected path.
+
 ## Requirements
 
 - macOS 14 (Sonoma) or later
@@ -221,7 +265,7 @@ Open Settings with the menu-bar icon (⌘,) or via the status-bar item.
 |---------|----------------------------------------------------------------------------------------------------------------------------|
 | General | Show menu-bar icon toggle; Launch at login (`SMAppService`)                                                                |
 | Media   | **Music source** (Spotify only / Now Playing any app); **Layout** (with artwork thumbnail / compact text-only)            |
-| HUDs    | Coming soon                                                                                                                |
+| HUDs    | Volume HUD toggle; Brightness HUD toggle; Replace system HUD toggle (suppresses OSDUIHelper via launchctl)                 |
 | About   | Version, build, link to this repo                                                                                          |
 
 **Show menu-bar icon** persists in `UserDefaults`.
@@ -247,6 +291,7 @@ notchmate/
   Git/            - focused-repo branch/dirty glance (git via Process)
   Timer/          - Pomodoro focus timer + local-notification on completion
   SystemStats/    - CPU/memory load via Mach host statistics
+  HUDs/           - volume + brightness HUD controller + compact HUD view
 ```
 
 Feature widgets are isolated per folder so future **premium** features (notifications, multi-agent fleet view, themes) can be added as self-contained widgets gated behind a license check, without touching the notch shell. See `AGENTS.md`.

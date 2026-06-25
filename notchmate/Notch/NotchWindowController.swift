@@ -13,6 +13,7 @@ final class NotchWindowController {
     private let focus = FocusTimerController()
     private let stats = SystemStatsController()
     private let lyrics = LyricsController()
+    private let hud = HUDController()
     private let isExpanded = CurrentValueSubject<Bool, Never>(false)
     private var cancellables = Set<AnyCancellable>()
     // Deferred collapse task: absorbs transient mouseExited events that AppKit fires
@@ -57,6 +58,7 @@ final class NotchWindowController {
             focus: focus,
             stats: stats,
             lyrics: lyrics,
+            hud: hud,
             hasNotch: geometry.hasNotch,
             topInset: geometry.topInset,
             onHoverChange: { [weak self] hovering in
@@ -94,6 +96,7 @@ final class NotchWindowController {
         // FocusTimerController has no polling to start; its start() is the user action.
         stats.start()
         lyrics.start(media: media)
+        hud.start()
     }
 
     /// Extra expanded height beyond the base (Mochi + Spotify) block, summed per widget:

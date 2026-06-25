@@ -10,6 +10,7 @@ struct NotchView: View {
     @ObservedObject var focus: FocusTimerController
     @ObservedObject var stats: SystemStatsController
     @ObservedObject var lyrics: LyricsController
+    @ObservedObject var hud: HUDController
     let hasNotch: Bool
     let topInset: CGFloat
     let onHoverChange: (Bool) -> Void
@@ -69,16 +70,25 @@ struct NotchView: View {
                 SystemStatsWidget(stats: stats, expanded: true)
             }
         } else {
-            // Collapsed strip: media takes the flexible space; the rest are compact
-            // chips that each show only when they have something worth surfacing.
-            HStack(spacing: 10) {
-                MochiView(media: media, claude: claude, expanded: false)
-                MediaWidget(media: media, expanded: false)
-                FocusTimerWidget(timer: focus, expanded: false)
-                ClaudeSessionsWidget(sessions: claude, expanded: false)
-                GitWidget(git: git, expanded: false)
-                SystemStatsWidget(stats: stats, expanded: false)
+            // Collapsed strip: HUD event takes priority for ~1.5s; otherwise the
+            // normal widget chips. Animated crossfade between the two states.
+            Group {
+                if let event = hud.currentEvent {
+                    HUDView(event: event)
+                        .transition(.opacity)
+                } else {
+                    HStack(spacing: 10) {
+                        MochiView(media: media, claude: claude, expanded: false)
+                        MediaWidget(media: media, expanded: false)
+                        FocusTimerWidget(timer: focus, expanded: false)
+                        ClaudeSessionsWidget(sessions: claude, expanded: false)
+                        GitWidget(git: git, expanded: false)
+                        SystemStatsWidget(stats: stats, expanded: false)
+                    }
+                    .transition(.opacity)
+                }
             }
+            .animation(.easeOut(duration: 0.15), value: hud.currentEvent != nil)
         }
     }
 
