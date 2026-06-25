@@ -42,6 +42,11 @@ struct NotchView: View {
     private var content: some View {
         if hovering {
             VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    MochiView(spotify: spotify, claude: claude, expanded: true)
+                    Spacer(minLength: 0)
+                }
                 SpotifyWidget(spotify: spotify, expanded: true)
                 if claude.count > 0 {
                     Divider().overlay(Color.white.opacity(0.1))
@@ -50,6 +55,7 @@ struct NotchView: View {
             }
         } else {
             HStack(spacing: 10) {
+                MochiView(spotify: spotify, claude: claude, expanded: false)
                 SpotifyWidget(spotify: spotify, expanded: false)
                 ClaudeSessionsWidget(sessions: claude, expanded: false)
             }

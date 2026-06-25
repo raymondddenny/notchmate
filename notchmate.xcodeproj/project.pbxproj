@@ -15,6 +15,8 @@
 		2222222222222222222222B6 /* SpotifyWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A6 /* SpotifyWidget.swift */; };
 		2222222222222222222222B7 /* ClaudeSessionsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A8 /* ClaudeSessionsController.swift */; };
 		2222222222222222222222B8 /* ClaudeSessionsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A9 /* ClaudeSessionsWidget.swift */; };
+		2222222222222222222222B9 /* MochiMood.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AA /* MochiMood.swift */; };
+		2222222222222222222222BA /* MochiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AB /* MochiView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +29,8 @@
 		1111111111111111111111A7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1111111111111111111111A8 /* ClaudeSessionsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSessions/ClaudeSessionsController.swift; sourceTree = "<group>"; };
 		1111111111111111111111A9 /* ClaudeSessionsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSessions/ClaudeSessionsWidget.swift; sourceTree = "<group>"; };
+		1111111111111111111111AA /* MochiMood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MochiMood.swift; sourceTree = "<group>"; };
+		1111111111111111111111AB /* MochiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MochiView.swift; sourceTree = "<group>"; };
 		3333333333333333333333C1 /* notchmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = notchmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -60,6 +64,8 @@
 				1111111111111111111111A6 /* SpotifyWidget.swift */,
 				1111111111111111111111A8 /* ClaudeSessionsController.swift */,
 				1111111111111111111111A9 /* ClaudeSessionsWidget.swift */,
+				1111111111111111111111AA /* MochiMood.swift */,
+				1111111111111111111111AB /* MochiView.swift */,
 				1111111111111111111111A7 /* Info.plist */,
 			);
 			path = notchmate;
@@ -149,6 +155,8 @@
 				2222222222222222222222B6 /* SpotifyWidget.swift in Sources */,
 				2222222222222222222222B7 /* ClaudeSessionsController.swift in Sources */,
 				2222222222222222222222B8 /* ClaudeSessionsWidget.swift in Sources */,
+				2222222222222222222222B9 /* MochiMood.swift in Sources */,
+				2222222222222222222222BA /* MochiView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
