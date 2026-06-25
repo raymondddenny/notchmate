@@ -120,11 +120,16 @@ Full system stats and the timer controls live in the **expanded** panel only. Sp
 
 ## Build
 
-Headless, unsigned, from the repo root:
+Headless, from the repo root (two commands - the signing step is required for Spotify access):
 
 ```sh
+# 1. Compile
 xcodebuild -project notchmate.xcodeproj -scheme notchmate -configuration Release \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+
+# 2. Ad-hoc sign - macOS TCC requires a stable code identity to attach the
+#    Automation permission to. Without this the Spotify prompt never fires.
+codesign --force --deep --sign - build/Build/Products/Release/notchmate.app
 ```
 
 The app bundle is produced at:
@@ -133,7 +138,12 @@ The app bundle is produced at:
 build/Build/Products/Release/notchmate.app
 ```
 
-Or open `notchmate.xcodeproj` in Xcode and press Run.
+**After a rebuild:** the ad-hoc identity is derived from the binary hash, so it changes each time you rebuild.
+macOS will re-prompt for Automation access after each fresh build.
+Run both commands above again and approve the prompt when it appears.
+Stable per-developer signing (Developer ID, the eventual $99 path) eliminates re-prompts permanently.
+
+Or open `notchmate.xcodeproj` in Xcode and press Run (Xcode uses ad-hoc signing automatically from the project's `CODE_SIGN_IDENTITY = "-"` setting).
 
 ## Run
 
@@ -152,9 +162,10 @@ To quit from the menu-bar icon:
 killall notchmate
 ```
 
-### Unsigned-build Gatekeeper note
+### Gatekeeper note (locally-built binaries)
 
-The build above is **unsigned**. macOS Gatekeeper will block it on first launch. Clear the quarantine attribute:
+A locally-built, ad-hoc-signed binary is not quarantined (quarantine is set only on downloaded files), so Gatekeeper will not block it.
+If you downloaded a pre-built binary instead of building from source, clear the quarantine attribute:
 
 ```sh
 xattr -dr com.apple.quarantine build/Build/Products/Release/notchmate.app
@@ -162,18 +173,33 @@ xattr -dr com.apple.quarantine build/Build/Products/Release/notchmate.app
 
 If macOS still refuses to open it, go to **System Settings > Privacy & Security**, scroll to the message about `notchmate` being blocked, and click **Open Anyway**.
 
+> **Signing requirement:** the `codesign` step in the build instructions above is mandatory for the Spotify widget to work.
+> An unsigned binary has no stable identity, so macOS TCC cannot attach the Automation permission to it - the Spotify prompt will never appear and the widget stays stuck on "Nothing playing".
+> Ad-hoc signing gives the binary a hash-based identity that TCC can use.
+
 ### Automation permission (first run)
 
+**Prerequisite:** the binary must be ad-hoc signed (see the `codesign` step in [Build](#build) above).
+Without a signature, macOS TCC has no stable identity to prompt for, and the Spotify permission never appears.
+
 The Spotify widget talks to the Spotify desktop app via AppleScript.
-On the first poll after Spotify is running, macOS shows a prompt:
+On the first poll where Spotify is running, macOS shows a one-time prompt:
 
 > "notchmate" wants access to control "Spotify".
 
 Click **OK**.
+The notch will immediately start showing the now-playing track.
 
-If you click **Don't Allow** (or if you previously dismissed the prompt), notchmate cannot read Spotify.
-Instead of a misleading "Nothing playing", the widget shows **"Allow Spotify access in System Settings"**.
-To fix it, open **System Settings > Privacy & Security > Automation**, find **notchmate**, and enable the **Spotify** toggle.
+**If you clicked "Don't Allow"** (or if a prior build's grant was revoked):
+The widget shows an orange lock icon and a tappable **"Allow Spotify access"** button.
+Click it - notchmate opens **System Settings > Privacy & Security > Automation** for you.
+Find **notchmate** in the list and enable the **Spotify** toggle.
+The widget picks up the change within one second (no restart needed).
+
+**After a rebuild:**
+The ad-hoc identity is the binary's hash - it changes with each build.
+macOS treats the rebuilt binary as a new identity and re-prompts automatically on the next poll where Spotify is running.
+Just click **OK** again.
 
 All AppleScript errors are logged to Console.app as `[SpotifyController] AppleScript error <code>: <message>` for diagnosis.
 Error -1743 (`errAEEventNotPermitted`) is the TCC-denied code.

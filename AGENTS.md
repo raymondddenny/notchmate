@@ -7,7 +7,11 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 ## Build
 
 - Native macOS app, Swift + SwiftUI, deployment target macOS 14. Hand-authored `.xcodeproj` (no CocoaPods/Carthage/SPM deps; zero third-party).
-- Headless build: `xcodebuild -project notchmate.xcodeproj -scheme notchmate -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO build`. Output: `build/Build/Products/Release/notchmate.app`.
+- Headless build (two steps - signing is required for Spotify TCC):
+  1. `xcodebuild -project notchmate.xcodeproj -scheme notchmate -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO build`
+  2. `codesign --force --deep --sign - build/Build/Products/Release/notchmate.app`
+  Output: `build/Build/Products/Release/notchmate.app`.
+  The xcodeproj already sets `CODE_SIGN_IDENTITY = "-"` for the Xcode IDE path; the CLI path needs the explicit post-build `codesign` step because `CODE_SIGNING_ALLOWED=NO` overrides it.
 - `Info.plist` is checked in and wired via `INFOPLIST_FILE` with `GENERATE_INFOPLIST_FILE = NO`. `LSUIElement = true` (no dock icon / agent app), so the app has no standard window - all UI is the NSPanel.
 
 ## Architecture
@@ -43,10 +47,15 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 The guard also keeps a closed Spotify silent (idle state, no error spam).
 - `NSAppleScript` runs on a dedicated serial queue (not main); results published back to main.
 Artwork is fetched from `artwork url` and cached per track id.
+- **Code signing is required for Spotify TCC - this is the root cause of "prompt never fires":** macOS TCC needs a stable code identity (signing cert or ad-hoc hash) to attach an Automation permission grant to.
+A fully unsigned binary (`CODE_SIGNING_ALLOWED=NO` with no post-build signing) has no identity - the TCC prompt never appears and every Apple Event returns -1743.
+Fix: run `codesign --force --deep --sign - <app>` after every `xcodebuild` (the `-` identity is ad-hoc - free, no developer account needed).
+The xcodeproj's `CODE_SIGN_IDENTITY = "-"` already handles this for Xcode IDE builds; only the headless CLI path needs the explicit post-build step.
+**Rebuild caveat:** ad-hoc identity = binary hash, so it changes each time you rebuild. macOS will re-prompt for Automation access after each fresh build. Stable Developer ID signing (the eventual $99 path) eliminates re-prompts permanently.
 - **Spotify Automation TCC flow:** the TCC prompt fires on the first poll where Spotify is running (the `tell application "Spotify"` block sends the Apple Event).
 `NSAppleEventsUsageDescription` is set in Info.plist.
 `SpotifyController.executeScript` logs all errors with `NSLog("[SpotifyController] AppleScript error %d: %@")` so failures are diagnosable in Console.app.
-Error -1743 (`errAEEventNotPermitted`) means TCC was explicitly denied; `SpotifyController.permissionDenied` is set to `true` and `SpotifyWidget.idleView` shows "Allow Spotify access in System Settings" rather than "Nothing playing".
+Error -1743 (`errAEEventNotPermitted`) means TCC was explicitly denied; `SpotifyController.permissionDenied` is set to `true` and `SpotifyWidget.idleView` shows a tappable **"Allow Spotify access"** button that calls `SpotifyController.openAutomationSettings()` (opens Privacy & Security > Automation) rather than showing a misleading "Nothing playing".
 Do NOT swallow -1743 as idle state - the two are semantically different and the widget must surface the distinction.
 If TCC is denied after the first prompt, the user must re-enable under **System Settings > Privacy & Security > Automation > notchmate > Spotify**.
 - **FocusTimerController.start() is the user action, not a controller init:** `FocusTimerController` has no background polling; its `start()` method begins the countdown and is called by user interaction only.

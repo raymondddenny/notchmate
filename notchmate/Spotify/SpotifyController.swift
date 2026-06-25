@@ -85,6 +85,18 @@ final class SpotifyController: ObservableObject {
         }.resume()
     }
 
+    // MARK: - Permission
+
+    /// Opens System Settings > Privacy & Security > Automation so the user can
+    /// grant (or re-grant) notchmate access to Spotify. Also re-polls immediately
+    /// so the widget updates without waiting for the next tick.
+    func openAutomationSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+            NSWorkspace.shared.open(url)
+        }
+        poll()
+    }
+
     // MARK: - Transport commands
 
     func playPause() { runCommand("playpause") }
