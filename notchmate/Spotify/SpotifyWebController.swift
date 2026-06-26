@@ -496,14 +496,34 @@ final class SpotifyWebController: ObservableObject {
 enum SpotifyKeychain {
     private static let service = "notchmate.spotify.webapi"
 
+    /// The data-protection keychain (`kSecUseDataProtectionKeychain`) is gated by the
+    /// `keychain-access-groups` entitlement, which is a *restricted* entitlement: on
+    /// macOS 26 it only validates against a real Apple certificate chain. Ad-hoc signing
+    /// has no cert chain, so the entitlement can't ship (it makes AMFI kill the app at
+    /// launch) and the data-protection keychain rejects writes. Ad-hoc builds therefore
+    /// fall back to the login (file-based) keychain - which re-incurs the per-rebuild
+    /// "Always Allow" prompt, but actually works. Developer ID builds keep the
+    /// data-protection keychain (entitlement validates, no prompt). See AGENTS.md.
+    #if ADHOC_SIGNING
+    private static let useDataProtection = false
+    #else
+    private static let useDataProtection = true
+    #endif
+
+    /// Common item attributes, adding the data-protection flag only when supported.
+    private static func baseAttrs(key: String) -> [String: Any] {
+        var attrs: [String: Any] = [
+            kSecClass as String:       kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+        ]
+        if useDataProtection { attrs[kSecUseDataProtectionKeychain as String] = true }
+        return attrs
+    }
+
     static func save(_ value: String, key: String) {
         let data = Data(value.utf8)
-        let base: [String: Any] = [
-            kSecClass as String:                    kSecClassGenericPassword,
-            kSecAttrService as String:              service,
-            kSecAttrAccount as String:              key,
-            kSecUseDataProtectionKeychain as String: true,
-        ]
+        let base = baseAttrs(key: key)
         // Delete any existing entry then re-add (simpler than SecItemUpdate).
         SecItemDelete(base as CFDictionary)
         var addAttrs = base
@@ -516,14 +536,9 @@ enum SpotifyKeychain {
     }
 
     static func load(_ key: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String:                    kSecClassGenericPassword,
-            kSecAttrService as String:              service,
-            kSecAttrAccount as String:              key,
-            kSecReturnData as String:               true,
-            kSecMatchLimit as String:               kSecMatchLimitOne,
-            kSecUseDataProtectionKeychain as String: true,
-        ]
+        var query = baseAttrs(key: key)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: AnyObject?
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
               let data = result as? Data else { return nil }
@@ -531,13 +546,7 @@ enum SpotifyKeychain {
     }
 
     static func delete(_ key: String) {
-        let query: [String: Any] = [
-            kSecClass as String:                    kSecClassGenericPassword,
-            kSecAttrService as String:              service,
-            kSecAttrAccount as String:              key,
-            kSecUseDataProtectionKeychain as String: true,
-        ]
-        SecItemDelete(query as CFDictionary)
+        SecItemDelete(baseAttrs(key: key) as CFDictionary)
     }
 
     /// One-time migration: reads tokens from the old login-keychain location and
@@ -549,6 +558,9 @@ enum SpotifyKeychain {
     /// appearing in Keychain Access. The user is effectively asked to reconnect
     /// Spotify once - they were being prompted on every rebuild anyway.
     static func migrateLoginKeychainIfNeeded() {
+        // Only relevant when the data-protection keychain is the destination. In ad-hoc
+        // builds the login keychain IS the store, so there is nothing to migrate.
+        guard useDataProtection else { return }
         for key in ["access_token", "refresh_token"] {
             // Skip if already present in the data-protection keychain.
             guard load(key) == nil else { continue }

@@ -8,6 +8,13 @@ struct MascotPane: View {
     var body: some View {
         Form {
             Section {
+                Toggle("Show mascot", isOn: $prefs.mascotEnabled)
+            } footer: {
+                Text("The mascot appears in the collapsed strip only, pinned to the left of the notch.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 HStack(spacing: 16) {
                     ForEach(MascotCharacter.allCases, id: \.self) { character in
                         characterCard(character)
@@ -15,6 +22,8 @@ struct MascotPane: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.vertical, 4)
+                .opacity(prefs.mascotEnabled ? 1 : 0.4)
+                .disabled(!prefs.mascotEnabled)
             } header: {
                 Text("Character")
             } footer: {

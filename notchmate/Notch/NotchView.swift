@@ -90,12 +90,6 @@ struct NotchView: View {
             // Lyrics are folded into the media tile: pass the controller so the current
             // synced line renders beneath the track info when available.
             MediaWidget(media: media, expanded: true, lyrics: lyrics)
-        case .mochi:
-            HStack {
-                Spacer(minLength: 0)
-                MascotView(media: media, claude: claude, expanded: true)
-                Spacer(minLength: 0)
-            }
         case .timer:
             FocusTimerWidget(timer: focus, expanded: true)
         case .git:
@@ -120,7 +114,7 @@ struct NotchView: View {
         // right) instead of crowding everything under the center.
         let visible = Set(prefs.visibleModules)
         return HStack(spacing: Theme.sp2) {
-            if visible.contains(.mochi) {
+            if prefs.mascotEnabled {
                 MascotView(media: media, claude: claude, expanded: false)
             }
             // Equal spacers on both sides keep the chip cluster centered under the notch
