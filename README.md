@@ -134,8 +134,8 @@ If the function is unavailable the brightness HUD silently disables itself.
 
 ### HUD display
 
-When a volume or brightness change fires, the collapsed notch strip briefly replaces its normal chip content with a compact icon + level bar + percentage for 1.5s, then crossfades back.
-The HUD does not interrupt the expanded (hover) state.
+When a volume or brightness change fires, a compact icon + level bar + percentage pill **slides down from just below the collapsed notch**, stays visible ~1.5s, then slides back up and fades out.
+It is a separate floating panel (not part of the strip), so it never disturbs the collapsed chips or the expanded (hover) state.
 
 ### System HUD suppression (off by default)
 
@@ -156,6 +156,16 @@ Restoration runs when the toggle is switched off, or automatically when the app 
 **Default:** OFF.
 **macOS 26 caveat:** if the plist has moved or the service is protected, `bootout` will fail silently (logged to Console.app as `[HUDController] bootout failed`), leaving the native HUD intact.
 The toggle is disabled in HUDs settings when the plist is not found at the expected path.
+
+## Slice 7 (current)
+
+A responsive UI + polish pass over the expanded grid, collapsed strip, and HUD:
+
+- **Combined media + lyrics module.** The Media Player tile is now one unified card: artwork + title + artist on top, then the current synced lyric line stacked **directly above** the transport controls. There is no separate Lyrics module any more (it was folded in), so it never appears as two stacked sections.
+- **At most 3 modules show.** The panel renders up to three modules at once. Settings > Layout shows an "N of 3 shown" counter and disables further toggles once the cap is reached; rendering also takes only the first three in order as a backstop. Each row sizes to a comfortable fixed column width so titles like "Filosofi Teduh" or "Sungai Suk..." get enough room and no longer truncate awkwardly - the panel width and height adapt to the actual module/row count.
+- **Click a Claude session to manage it.** The Claude Sessions tile in the panel is clickable and opens **Settings > Claude Sessions**, which lists every running session (project + branch + path). Each has a **Stop** button that, after a confirmation dialog, sends `SIGTERM` to **only that session's resolved PID** - never a broad kill. Permission or already-exited failures surface a clear message.
+- **Collapsed mascot at the left edge.** In the collapsed strip the mascot is pinned to the far left while the now-playing chips stay centered under the notch. The mascot is also smaller and cuter in the expanded view.
+- **Now-playing animation in the collapsed strip.** The collapsed media chip shows animated equalizer bars (bouncing while playing, still when paused) ahead of the transport controls.
 
 ## Requirements
 

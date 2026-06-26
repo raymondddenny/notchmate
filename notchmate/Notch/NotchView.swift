@@ -13,6 +13,8 @@ struct NotchView: View {
     let hasNotch: Bool
     let topInset: CGFloat
     let onHoverChange: (Bool) -> Void
+    /// Opens Settings to the Claude Sessions pane (invoked from the Claude tile).
+    var onOpenClaudeSettings: () -> Void = {}
 
     @State private var hovering = false
     @ObservedObject private var prefs = NotchPreferences.shared
@@ -51,13 +53,14 @@ struct NotchView: View {
     // MARK: - Expanded horizontal grid
 
     private var expandedGrid: some View {
-        let modules = prefs.orderedEnabledModules
+        let modules = prefs.visibleModules
         let rows = chunkedRows(modules, rowCount: prefs.expandedRowCount)
         return VStack(alignment: .leading, spacing: Theme.tileGap) {
             ForEach(rows.indices, id: \.self) { i in
                 moduleRow(rows[i])
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private func moduleRow(_ modules: [LayoutModule]) -> some View {
@@ -66,13 +69,14 @@ struct NotchView: View {
                 moduleTile(module)
             }
         }
+        .frame(maxHeight: .infinity)
     }
 
     private func moduleTile(_ module: LayoutModule) -> some View {
         tileContent(module)
             .padding(.horizontal, Theme.sp3)
             .padding(.vertical, Theme.sp2 + 2)
-            .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
                     .fill(Theme.panelSurface)
@@ -83,6 +87,8 @@ struct NotchView: View {
     private func tileContent(_ module: LayoutModule) -> some View {
         switch module {
         case .media:
+            // Lyrics are folded into the media tile: pass the controller so the current
+            // synced line renders beneath the track info when available.
             MediaWidget(media: media, expanded: true, lyrics: lyrics)
         case .mochi:
             HStack {
@@ -90,14 +96,12 @@ struct NotchView: View {
                 MascotView(media: media, claude: claude, expanded: true)
                 Spacer(minLength: 0)
             }
-        case .lyrics:
-            LyricsWidget(lyrics: lyrics, expanded: true)
         case .timer:
             FocusTimerWidget(timer: focus, expanded: true)
         case .git:
             GitWidget(git: git, expanded: true)
         case .claude:
-            ClaudeSessionsWidget(sessions: claude, expanded: true)
+            ClaudeSessionsWidget(sessions: claude, expanded: true, onTap: onOpenClaudeSettings)
         case .stats:
             SystemStatsWidget(stats: stats, expanded: true)
         }
@@ -111,24 +115,35 @@ struct NotchView: View {
     }
 
     private var collapsedChips: some View {
-        HStack(spacing: Theme.sp2) {
-            if prefs.enabledModules.contains(.mochi) {
+        // Mascot is pinned to the left edge of the strip; the glanceable chips group to
+        // the right. On a notch Mac this flanks the physical notch (mascot left, chips
+        // right) instead of crowding everything under the center.
+        let visible = Set(prefs.visibleModules)
+        return HStack(spacing: Theme.sp2) {
+            if visible.contains(.mochi) {
                 MascotView(media: media, claude: claude, expanded: false)
             }
-            if prefs.enabledModules.contains(.media) {
-                MediaWidget(media: media, expanded: false)
+            // Equal spacers on both sides keep the chip cluster centered under the notch
+            // while the mascot (when present) sits flush against the left edge.
+            Spacer(minLength: Theme.sp2)
+            HStack(spacing: Theme.sp3) {
+                if visible.contains(.media) {
+                    MediaWidget(media: media, expanded: false)
+                }
+                // .claude is expanded-only; omitted from collapsed strip to keep it lean.
+                if visible.contains(.timer) {
+                    FocusTimerWidget(timer: focus, expanded: false)
+                }
+                if visible.contains(.git) {
+                    GitWidget(git: git, expanded: false)
+                }
+                if visible.contains(.stats) {
+                    SystemStatsWidget(stats: stats, expanded: false)
+                }
             }
-            if prefs.enabledModules.contains(.timer) {
-                FocusTimerWidget(timer: focus, expanded: false)
-            }
-            // .claude is expanded-only; omitted from collapsed strip to keep it lean.
-            if prefs.enabledModules.contains(.git) {
-                GitWidget(git: git, expanded: false)
-            }
-            if prefs.enabledModules.contains(.stats) {
-                SystemStatsWidget(stats: stats, expanded: false)
-            }
+            Spacer(minLength: Theme.sp2)
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Background

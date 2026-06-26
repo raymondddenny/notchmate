@@ -43,6 +43,7 @@
 		DCDC000000000000000000B1 /* DuckyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A1 /* DuckyView.swift */; };
 		DCDC000000000000000000B2 /* MascotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A2 /* MascotView.swift */; };
 		DCDC000000000000000000B3 /* MascotPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A3 /* MascotPane.swift */; };
+		DCDC000000000000000000E2 /* ClaudeSessionsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000E1 /* ClaudeSessionsPane.swift */; };
 		DCDC000000000000000000B4 /* ducky_2_spritesheet.png in Resources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A4 /* ducky_2_spritesheet.png */; };
 		DCDC000000000000000000B5 /* ducky_3_spritesheet.png in Resources */ = {isa = PBXBuildFile; fileRef = DCDC000000000000000000A5 /* ducky_3_spritesheet.png */; };
 /* End PBXBuildFile section */
@@ -86,6 +87,7 @@
 		DCDC000000000000000000A1 /* DuckyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/DuckyView.swift; sourceTree = "<group>"; };
 		DCDC000000000000000000A2 /* MascotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MascotView.swift; sourceTree = "<group>"; };
 		DCDC000000000000000000A3 /* MascotPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/MascotPane.swift; sourceTree = "<group>"; };
+		DCDC000000000000000000E1 /* ClaudeSessionsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/ClaudeSessionsPane.swift; sourceTree = "<group>"; };
 		DCDC000000000000000000A4 /* ducky_2_spritesheet.png */ = {isa = PBXFileReference; lastKnownFileType = "image.png"; path = Mochi/ducky_2_spritesheet.png; sourceTree = "<group>"; };
 		DCDC000000000000000000A5 /* ducky_3_spritesheet.png */ = {isa = PBXFileReference; lastKnownFileType = "image.png"; path = Mochi/ducky_3_spritesheet.png; sourceTree = "<group>"; };
 		3333333333333333333333C1 /* notchmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = notchmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -151,6 +153,7 @@
 				DCDC000000000000000000A1 /* DuckyView.swift */,
 				DCDC000000000000000000A2 /* MascotView.swift */,
 				DCDC000000000000000000A3 /* MascotPane.swift */,
+				DCDC000000000000000000E1 /* ClaudeSessionsPane.swift */,
 				DCDC000000000000000000A4 /* ducky_2_spritesheet.png */,
 				DCDC000000000000000000A5 /* ducky_3_spritesheet.png */,
 			);
@@ -271,6 +274,7 @@
 				DCDC000000000000000000B1 /* DuckyView.swift in Sources */,
 				DCDC000000000000000000B2 /* MascotView.swift in Sources */,
 				DCDC000000000000000000B3 /* MascotPane.swift in Sources */,
+				DCDC000000000000000000E2 /* ClaudeSessionsPane.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

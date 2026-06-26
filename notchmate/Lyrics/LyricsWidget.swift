@@ -68,7 +68,7 @@ struct LyricMarqueeText: View {
 /// Transitions with a subtle opacity + vertical drift when the line changes;
 /// Reduce Motion degrades to plain opacity.
 /// Long lines scroll horizontally via LyricMarqueeText.
-/// Used inside MediaWidget (between track info and controls) and as the LyricsWidget tile.
+/// Used inside MediaWidget (between track info and controls).
 struct LyricLineView: View {
     @ObservedObject var lyrics: LyricsController
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -176,58 +176,6 @@ struct LyricsStripOverlayView: View {
     }
 }
 
-// MARK: - LyricsWidget tile
-
-/// LyricsWidget module tile (expanded panel only).
-/// Synced: single crossfading line via LyricLineView.
-/// Plain: scrollable full-text block (unchanged).
-/// Loading / no-match: status row.
-struct LyricsWidget: View {
-    @ObservedObject var lyrics: LyricsController
-    let expanded: Bool
-
-    var body: some View {
-        if expanded {
-            expandedContent
-        }
-    }
-
-    @ViewBuilder
-    private var expandedContent: some View {
-        switch lyrics.state {
-        case .idle:
-            EmptyView()
-        case .loading:
-            statusRow("Loading lyrics\u{2026}", icon: "music.note.list")
-        case .noMatch:
-            statusRow("No lyrics found", icon: "questionmark.bubble")
-        case .synced:
-            LyricLineView(lyrics: lyrics)
-        case .plain(let text):
-            plainView(text: text)
-        }
-    }
-
-    private func statusRow(_ message: String, icon: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.4))
-            Text(message)
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.4))
-            Spacer(minLength: 0)
-        }
-    }
-
-    private func plainView(text: String) -> some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            Text(text)
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.6))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .lineSpacing(3)
-        }
-        .frame(maxHeight: 108)
-    }
-}
+// Note: lyrics no longer have a standalone module tile. The current synced line is
+// rendered by `LyricLineView` inside the unified Media tile, and by
+// `LyricsStripOverlayView` in the below-notch strip.

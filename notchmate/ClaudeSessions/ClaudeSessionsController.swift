@@ -27,6 +27,10 @@ struct ClaudeProjectGroup: Equatable, Identifiable {
 /// reflects interactive sessions, not transient CLI helpers. Project name is the
 /// basename of each process's cwd, resolved via `lsof`.
 final class ClaudeSessionsController: ObservableObject {
+    /// Shared instance so the notch panel and the Claude Sessions settings pane observe
+    /// the same live session list (and the pane's Stop acts on the same PIDs).
+    static let shared = ClaudeSessionsController()
+
     @Published private(set) var sessions: [ClaudeSession] = []
 
     var count: Int { sessions.count }
@@ -57,6 +61,44 @@ final class ClaudeSessionsController: ObservableObject {
     }
 
     deinit { timer?.invalidate() }
+
+    // MARK: - Stop a session
+
+    /// Result of attempting to stop a session, so the UI can message precisely.
+    enum StopResult: Equatable {
+        case ok
+        case notPermitted   // EPERM: process owned by another user / SIP-protected
+        case alreadyGone    // ESRCH: process exited between scan and kill
+        case failed(Int32)  // any other errno
+    }
+
+    /// Sends SIGTERM to exactly one resolved Claude session PID and rescans.
+    /// SIGTERM (not SIGKILL) lets `claude` shut down cleanly. We only ever target the
+    /// pid that detection resolved as a `claude` process - never a broad sweep. Confirm
+    /// at the call site before invoking.
+    @discardableResult
+    func stop(_ session: ClaudeSession) -> StopResult {
+        let pid = pid_t(session.id)
+        guard pid > 0 else { return .failed(EINVAL) }
+        let rc = kill(pid, SIGTERM)
+        if rc == 0 {
+            // Optimistically drop it from the list so the UI updates immediately; the
+            // next scan reconciles ground truth.
+            sessions.removeAll { $0.id == session.id }
+            scan()
+            return .ok
+        }
+        let err = errno
+        NSLog("[ClaudeSessionsController] SIGTERM to pid %d failed: errno %d", session.id, err)
+        switch err {
+        case EPERM: return .notPermitted
+        case ESRCH: scan(); return .alreadyGone
+        default:    return .failed(err)
+        }
+    }
+
+    /// Force an immediate rescan (used after a stop or on pane appearance).
+    func refresh() { scan() }
 
     // MARK: - Scan
 

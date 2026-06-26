@@ -37,8 +37,8 @@ private struct EqualizerBars: View {
 struct MediaWidget: View {
     @ObservedObject var media: MediaController
     let expanded: Bool
-    /// Optional lyrics controller. When provided and the .lyrics module is enabled,
-    /// a single crossfading lyric line appears between track info and controls.
+    /// Optional lyrics controller. When provided and a synced line is available, a
+    /// single crossfading lyric line appears between track info and controls.
     var lyrics: LyricsController? = nil
     @ObservedObject private var prefs = NotchPreferences.shared
     @ObservedObject private var spotifyWeb = SpotifyWebController.shared
@@ -61,22 +61,29 @@ struct MediaWidget: View {
     // MARK: - Collapsed
 
     private func collapsedView(_ np: NowPlaying) -> some View {
-        HStack(spacing: 16) {
-            controlButton("backward.fill") { media.previous() }
-            controlButton(np.isPlaying ? "pause.fill" : "play.fill", size: 18) { media.playPause() }
-            controlButton("forward.fill") { media.next() }
+        HStack(spacing: Theme.sp3) {
+            // Now-playing animation: equalizer bars bounce while playing, hold still when
+            // paused. Sits ahead of the transport controls as a glanceable "live" cue.
+            EqualizerBars(isPlaying: np.isPlaying)
+            HStack(spacing: 16) {
+                controlButton("backward.fill") { media.previous() }
+                controlButton(np.isPlaying ? "pause.fill" : "play.fill", size: 18) { media.playPause() }
+                controlButton("forward.fill") { media.next() }
+            }
+            .disabled(premiumControlsDisabled)
+            .opacity(premiumControlsDisabled ? 0.35 : 1)
         }
-        .disabled(premiumControlsDisabled)
-        .opacity(premiumControlsDisabled ? 0.35 : 1)
     }
 
     // MARK: - Expanded
 
     private func expandedView(_ np: NowPlaying) -> some View {
-        VStack(spacing: Theme.sp2) {
+        // Unified media tile: track info on top, the live synced lyric line folded in
+        // beneath it (no separate Lyrics module), transport pinned to the bottom.
+        VStack(alignment: .leading, spacing: Theme.sp2) {
             if prefs.musicLayout == .artwork {
                 HStack(spacing: Theme.sp3) {
-                    artworkThumb(size: 56, corner: 8)
+                    artworkThumb(size: 48, corner: 8)
                     trackInfo(np)
                     Spacer(minLength: 0)
                 }
@@ -87,11 +94,15 @@ struct MediaWidget: View {
                     Spacer(minLength: 0)
                 }
             }
-            if prefs.enabledModules.contains(.lyrics), let lc = lyrics {
+            // Push the lyric + controls to the bottom so the current lyric line sits
+            // directly above the transport controls.
+            Spacer(minLength: 0)
+            if let lc = lyrics, lc.currentLine != nil {
                 LyricLineView(lyrics: lc)
             }
             controls(np)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func trackInfo(_ np: NowPlaying) -> some View {
@@ -127,8 +138,11 @@ struct MediaWidget: View {
                 Text("Spotify Premium required for controls")
                     .font(Theme.captionFont)
                     .foregroundStyle(Theme.textTertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var premiumControlsDisabled: Bool {

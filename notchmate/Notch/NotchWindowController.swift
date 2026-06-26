@@ -11,7 +11,7 @@ final class NotchWindowController {
     private var lyricsPanel: NSPanel?
     private var hudActive = false
     private let media = MediaController()
-    private let claude = ClaudeSessionsController()
+    private let claude = ClaudeSessionsController.shared
     private let git: GitController
     private let focus = FocusTimerController()
     private let stats = SystemStatsController()
@@ -38,21 +38,33 @@ final class NotchWindowController {
             // Wide enough to flank the notch with a glanceable strip beneath it.
             NSSize(width: max(notchWidth + 160, 260), height: notchHeight + 36)
         }
-        /// Expanded size for the horizontal grid layout.
-        /// Width grows as rowCount decreases (fewer rows = wider = more horizontal space).
-        /// Height is fixed per row count; row height = 76pt with 7pt gaps and 20pt padding.
-        func expandedSize(rowCount: Int) -> NSSize {
-            let rowH: CGFloat = 76
-            let gap: CGFloat = 7
-            let pad: CGFloat = 20  // top 4 + bottom 10 + extra 6
-            let contentH = CGFloat(rowCount) * rowH + CGFloat(max(0, rowCount - 1)) * gap + pad
-            let baseWidth: CGFloat
-            switch rowCount {
-            case 1:  baseWidth = 580
-            case 2:  baseWidth = 480
-            default: baseWidth = 400
-            }
-            let width = max(baseWidth, notchWidth + 200)
+        /// Responsive expanded size for the horizontal grid.
+        ///
+        /// Width and height both derive from the actual content: the grid splits
+        /// `moduleCount` tiles into `rowCount` rows, so the widest row has
+        /// `ceil(moduleCount / rows)` columns. Each column gets a fixed comfortable
+        /// width and each row a fixed comfortable height, so tiles never get squeezed
+        /// regardless of how many modules are shown (text has room, nothing clips).
+        func expandedSize(moduleCount: Int, rowCount: Int) -> NSSize {
+            // A column wide enough for the richest tile (media: artwork + title + lyric)
+            // without truncating typical track titles.
+            let colWidth: CGFloat = 268
+            // A row tall enough for the media tile (artwork row + lyric line + controls).
+            let rowH: CGFloat = 118
+            let gap = Theme.tileGap
+            let padH = Theme.panelPadH
+            // top (~2) + bottom (panelPadBottom) + a little breathing room.
+            let padV: CGFloat = 2 + Theme.panelPadBottom + Theme.sp2
+
+            let count = max(1, moduleCount)
+            let rows = max(1, min(rowCount, count))
+            let cols = Int(ceil(Double(count) / Double(rows)))
+
+            let contentW = CGFloat(cols) * colWidth + CGFloat(max(0, cols - 1)) * gap + padH * 2
+            let contentH = CGFloat(rows) * rowH + CGFloat(max(0, rows - 1)) * gap + padV
+
+            // Never narrower than what's needed to flank the notch comfortably.
+            let width = max(contentW, notchWidth + 220)
             return NSSize(width: width, height: notchHeight + contentH)
         }
         /// Top inset before content starts (reserves the physical notch region).
@@ -60,8 +72,10 @@ final class NotchWindowController {
     }
 
     private var geometry: Geometry
+    private let settings: SettingsWindowController
 
-    init() {
+    init(settings: SettingsWindowController) {
+        self.settings = settings
         git = GitController(claude: claude)
         geometry = NotchWindowController.computeGeometry(for: NSScreen.main)
         panel = NotchPanel(contentRect: NSRect(origin: .zero, size: geometry.collapsedSize))
@@ -77,6 +91,9 @@ final class NotchWindowController {
             topInset: geometry.topInset,
             onHoverChange: { [weak self] hovering in
                 self?.handleHoverChange(hovering)
+            },
+            onOpenClaudeSettings: { [weak self] in
+                self?.settings.show(pane: .claude)
             }
         )
         let hosting = NSHostingView(rootView: root)
@@ -101,19 +118,17 @@ final class NotchWindowController {
             }
             .store(in: &cancellables)
 
-        // Show/fade the HUD panel below the notch when a HUD event fires.
+        // Slide+fade the HUD panel below the notch when a HUD event fires. Only the
+        // visibility transition (present<->absent) drives the animation; consecutive
+        // value changes (volume 50->60) just re-render the bar in place via the
+        // observed HUDController, so the pill doesn't re-slide on every tick.
         // Also hide the lyrics strip while HUD is visible to prevent overlap.
         hud.$currentEvent
+            .map { $0 != nil }
+            .removeDuplicates()
             .receive(on: RunLoop.main)
-            .sink { [weak self] event in
-                guard let self else { return }
-                self.hudActive = event != nil
-                if event != nil { self.positionHUDPanel() }
-                NSAnimationContext.runAnimationGroup { ctx in
-                    ctx.duration = event != nil ? 0.15 : 0.3
-                    self.hudPanel?.animator().alphaValue = event != nil ? 1 : 0
-                }
-                self.updateLyricsPanel()
+            .sink { [weak self] visible in
+                self?.setHUDPanel(visible: visible)
             }
             .store(in: &cancellables)
 
@@ -147,8 +162,11 @@ final class NotchWindowController {
     /// Expanded panel size: derived from row count preference.
     /// Width is wider for fewer rows (more horizontal space); height is fixed per row count.
     private var currentExpandedSize: NSSize {
-        let rowCount = NotchPreferences.shared.expandedRowCount
-        return geometry.expandedSize(rowCount: rowCount)
+        let prefs = NotchPreferences.shared
+        return geometry.expandedSize(
+            moduleCount: prefs.visibleModules.count,
+            rowCount: prefs.expandedRowCount
+        )
     }
 
     // MARK: - Hover handling
@@ -236,22 +254,53 @@ final class NotchWindowController {
         hudPanel = p
     }
 
-    /// Positions the HUD panel in a strip just below the collapsed notch/pill panel.
+    private let hudPanelWidth: CGFloat = 220
+    private let hudPanelHeight: CGFloat = 44
+    /// How far the HUD pill is nudged up (toward the notch) in its hidden state, so the
+    /// reveal reads as a slide-down rather than a plain fade.
+    private let hudSlideOffset: CGFloat = 12
+
+    /// Resting (fully revealed) frame for the HUD pill, just below the collapsed notch.
     /// Uses the collapsed panel's geometry (stable, avoids mid-animation jitter).
-    private func positionHUDPanel() {
-        guard let hudPanel else { return }
+    private func hudRestingFrame() -> NSRect {
         let screen = geometry.screenFrame
-        let hudWidth: CGFloat = 220
-        let hudHeight: CGFloat = 44
         let gap: CGFloat = 6
         let topGap: CGFloat = geometry.hasNotch ? 0 : 4
         let collapsedBottom = screen.maxY - geometry.collapsedSize.height - topGap
-        let originX = screen.midX - hudWidth / 2
-        let originY = collapsedBottom - gap - hudHeight
-        hudPanel.setFrame(
-            NSRect(x: originX, y: originY, width: hudWidth, height: hudHeight),
-            display: false
-        )
+        let originX = screen.midX - hudPanelWidth / 2
+        let originY = collapsedBottom - gap - hudPanelHeight
+        return NSRect(x: originX, y: originY, width: hudPanelWidth, height: hudPanelHeight)
+    }
+
+    /// Slide+fade the HUD pill in (slides down from under the notch) or out (slides
+    /// back up). Show is snappy (0.22s ease-out), hide is gentler (0.32s) so it reads
+    /// as a calm dismissal after the ~1.5s visible window.
+    private func setHUDPanel(visible: Bool) {
+        guard let hudPanel else { return }
+        hudActive = visible
+        updateLyricsPanel()
+
+        let resting = hudRestingFrame()
+        let hidden = resting.offsetBy(dx: 0, dy: hudSlideOffset)
+
+        if visible {
+            // Seed the hidden (raised, transparent) state instantly, then animate down.
+            hudPanel.setFrame(hidden, display: false)
+            hudPanel.alphaValue = 0
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.22
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                hudPanel.animator().setFrame(resting, display: true)
+                hudPanel.animator().alphaValue = 1
+            }
+        } else {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.32
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                hudPanel.animator().setFrame(hidden, display: true)
+                hudPanel.animator().alphaValue = 0
+            }
+        }
     }
 
     // MARK: - Lyrics strip panel

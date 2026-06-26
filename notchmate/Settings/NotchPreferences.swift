@@ -7,14 +7,16 @@ import ServiceManagement
 /// Identifies each expandable panel widget. Order + enabled state are persisted by
 /// NotchPreferences so the user can reorder and toggle modules in Settings > Layout.
 enum LayoutModule: String, CaseIterable, Identifiable {
-    case media, mochi, lyrics, timer, git, claude, stats
+    // Lyrics are no longer a standalone module: the current line is folded into the
+    // unified Media Player tile (see MediaWidget). The `lyrics` case was removed; saved
+    // preferences referencing it are dropped harmlessly by the rawValue compactMap.
+    case media, mochi, timer, git, claude, stats
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
         case .media:  return "Media Player"
         case .mochi:  return "Mascot"
-        case .lyrics: return "Lyrics"
         case .timer:  return "Focus Timer"
         case .git:    return "Git Status"
         case .claude: return "Claude Sessions"
@@ -22,11 +24,22 @@ enum LayoutModule: String, CaseIterable, Identifiable {
         }
     }
 
+    /// One-line description shown under the module name in Settings > Layout.
+    var summary: String {
+        switch self {
+        case .media:  return "Now playing, transport, and live lyrics"
+        case .mochi:  return "Animated mascot that reacts to music"
+        case .timer:  return "Pomodoro timer with focus streak heatmap"
+        case .git:    return "Branch and status of the focused repo"
+        case .claude: return "Live Claude Code sessions (click to manage)"
+        case .stats:  return "CPU and memory usage"
+        }
+    }
+
     var icon: String {
         switch self {
         case .media:  return "music.note"
         case .mochi:  return "face.smiling"
-        case .lyrics: return "text.quote"
         case .timer:  return "timer"
         case .git:    return "arrow.triangle.branch"
         case .claude: return "sparkles"
@@ -71,9 +84,14 @@ final class NotchPreferences: ObservableObject {
 
     // MARK: - Layout module defaults
     static let defaultModuleOrder: [LayoutModule] = [
-        .media, .claude, .timer, .mochi, .lyrics, .git, .stats
+        .media, .claude, .timer, .mochi, .git, .stats
     ]
     static let defaultEnabledModules: Set<LayoutModule> = [.media, .claude, .timer]
+
+    /// Hard cap on how many modules render in the panel at once. The grid is sized for
+    /// at most this many tiles; the Layout pane blocks enabling more, and rendering
+    /// takes only the first N in order as a defensive backstop.
+    static let maxVisibleModules = 3
 
     // MARK: - Mascot
 
@@ -201,6 +219,16 @@ final class NotchPreferences: ObservableObject {
         moduleOrder.filter { enabledModules.contains($0) }
     }
 
+    /// Modules actually rendered in the panel: ordered, enabled, capped at the max.
+    var visibleModules: [LayoutModule] {
+        Array(orderedEnabledModules.prefix(Self.maxVisibleModules))
+    }
+
+    /// Whether another module can still be enabled (cap not yet reached).
+    var canEnableMoreModules: Bool {
+        enabledModules.count < Self.maxVisibleModules
+    }
+
     // MARK: - Init
 
     private init() {
@@ -268,8 +296,9 @@ final class NotchPreferences: ObservableObject {
         }
         _expandedRowCount = Published(wrappedValue: rowCount)
 
-        // showLyrics: derived from enabled modules (module system is source of truth).
-        _showLyrics = Published(wrappedValue: enabled.contains(.lyrics))
+        // showLyrics: lyrics are folded into the Media tile, so they show whenever the
+        // Media module is enabled. Gates the LyricsController fetch/poll lifecycle.
+        _showLyrics = Published(wrappedValue: enabled.contains(.media))
 
         // Focus stats.
         let focusHistory = ud.data(forKey: "focusDailyHistory")
@@ -303,15 +332,17 @@ final class NotchPreferences: ObservableObject {
 
     // MARK: - Layout helpers
 
-    /// Toggle a module's enabled state and keep showLyrics in sync.
+    /// Toggle a module's enabled state, enforcing the visible-module cap, and keep
+    /// showLyrics in sync (lyrics live inside the Media tile). Enabling beyond the cap
+    /// is a no-op; the Layout pane disables those toggles so this is just a backstop.
     func toggleModule(_ module: LayoutModule) {
         if enabledModules.contains(module) {
             enabledModules.remove(module)
-        } else {
+        } else if canEnableMoreModules {
             enabledModules.insert(module)
         }
-        if module == .lyrics {
-            showLyrics = enabledModules.contains(.lyrics)
+        if module == .media {
+            showLyrics = enabledModules.contains(.media)
         }
     }
 
@@ -319,6 +350,6 @@ final class NotchPreferences: ObservableObject {
         moduleOrder = NotchPreferences.defaultModuleOrder
         enabledModules = NotchPreferences.defaultEnabledModules
         expandedRowCount = 2
-        showLyrics = false
+        showLyrics = enabledModules.contains(.media)
     }
 }
