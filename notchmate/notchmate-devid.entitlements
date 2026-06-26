@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Developer ID entitlements. Used ONLY when signing with a real Developer ID
+	     identity (see build.sh, SIGN_IDENTITY=...). keychain-access-groups is a
+	     restricted entitlement and validates only against a real certificate chain,
+	     so it must NOT be used for ad-hoc builds.
+	     Replace TEAMID below with the actual Apple Team ID before signing. -->
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>TEAMID.com.notchmate.app</string>
+	</array>
+</dict>
+</plist>

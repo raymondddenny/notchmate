@@ -2,15 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Ad-hoc / default entitlements. Only NON-restricted entitlements may live here:
+	     a restricted entitlement (e.g. keychain-access-groups) requires a real Apple
+	     certificate chain, which ad-hoc signing lacks, and AMFI then kills the app at
+	     launch on macOS 26 (RBS Code=5 / POSIX 163). The data-protection keychain that
+	     keychain-access-groups would unlock is only used in Developer ID builds; ad-hoc
+	     builds use the login keychain (see SpotifyKeychain, #if ADHOC_SIGNING).
+	     The Developer ID variant lives in notchmate-devid.entitlements. -->
 	<key>com.apple.security.automation.apple-events</key>
 	<true/>
-	<!-- keychain-access-groups enables the data-protection keychain (kSecUseDataProtectionKeychain).
-	     Access is gated by entitlement, not binary hash, so ad-hoc rebuilds never prompt.
-	     Ad-hoc: no team prefix, so the group is literally "com.notchmate.app".
-	     Developer ID: update this to "TEAMID.com.notchmate.app" and re-migrate tokens. -->
-	<key>keychain-access-groups</key>
-	<array>
-		<string>com.notchmate.app</string>
-	</array>
 </dict>
 </plist>

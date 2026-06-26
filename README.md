@@ -221,22 +221,10 @@ The widget reads `sessions/*.json`; the helper writes them on each hook event. F
 
 ## Build
 
-Headless, from the repo root (two commands - the signing step is required for Spotify access):
+Headless, from the repo root - `build.sh` runs both steps (compile + sign) with the correct entitlements:
 
 ```sh
-# 1. Compile
-xcodebuild -project notchmate.xcodeproj -scheme notchmate -configuration Release \
-  -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
-
-# 2. Ad-hoc sign with hardened runtime + entitlements.
-#    Two entitlements are active (see notchmate/notchmate.entitlements):
-#    - com.apple.security.automation.apple-events: required for Spotify AppleScript
-#      (macOS 26 blocks outgoing Apple Events without hardened runtime + this entitlement)
-#    - keychain-access-groups: enables the data-protection keychain for OAuth tokens
-#      (prevents the "enter login keychain password" prompt on every rebuild)
-codesign --force --deep --options runtime \
-  --entitlements notchmate/notchmate.entitlements \
-  --sign - build/Build/Products/Release/notchmate.app
+./build.sh
 ```
 
 The app bundle is produced at:
@@ -245,21 +233,32 @@ The app bundle is produced at:
 build/Build/Products/Release/notchmate.app
 ```
 
-**After a rebuild:** the ad-hoc identity is derived from the binary hash, so it changes each time you rebuild.
-macOS will re-prompt for Automation access (TCC for AppleScript) after each fresh build.
-Run both commands above again and approve the prompt when it appears.
-The Spotify Web API token (OAuth) is NOT affected by rebuilds - it lives in the data-protection keychain,
-which is gated by the `keychain-access-groups` entitlement rather than by binary hash, so it survives
-rebuilds without any password dialog.
-Stable per-developer signing (Developer ID, the eventual $99 path) eliminates the Automation re-prompt permanently too.
+`build.sh` ad-hoc signs with hardened runtime (`--options runtime`) and the trimmed
+`notchmate/notchmate.entitlements` (just `com.apple.security.automation.apple-events`, required so
+macOS 26 lets the Spotify widget send Apple Events).
 
-**Developer ID upgrade path (future):** when switching from ad-hoc to Developer ID signing,
-update the `keychain-access-groups` entry in `notchmate/notchmate.entitlements` from `com.notchmate.app`
-to `TEAMID.com.notchmate.app` (your 10-character Apple team ID).
-The first launch after that change will require Spotify re-authorization once (new identity, different keychain access group).
-After that, the login-keychain ACL sticks permanently.
+> **Why not `keychain-access-groups`?** That entitlement is *restricted* - on macOS 26 it only
+> validates against a real Apple certificate chain. Ad-hoc signing has none, so including it makes
+> the OS kill the app at launch (`Launchd job spawn failed`, POSIX 163). Ad-hoc builds therefore use
+> the **login keychain** for the Spotify OAuth token (compiled in via the `ADHOC_SIGNING` flag).
 
-Or open `notchmate.xcodeproj` in Xcode and press Run (Xcode uses ad-hoc signing automatically from the project's `CODE_SIGN_IDENTITY = "-"` setting).
+**After a rebuild:** the ad-hoc identity is derived from the binary hash, so it changes each time.
+macOS re-prompts for **Automation** access (Spotify AppleScript) and, on first Spotify use after a
+rebuild, for the **login keychain** password (to read the saved OAuth token). Approve both - if you
+dismiss the keychain prompt the token can't be read and the widget stays on "Connect Spotify".
+
+**Developer ID build (no per-rebuild prompts):**
+
+```sh
+SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" ./build.sh
+```
+
+This compiles WITHOUT `ADHOC_SIGNING` (so the OAuth token uses the data-protection keychain - no
+prompt) and signs with `notchmate/notchmate-devid.entitlements`. Replace `TEAMID` in that file with
+your 10-character Apple team ID first. The first launch re-authorizes Spotify once (new identity);
+after that there are no keychain or Automation re-prompts.
+
+Or open `notchmate.xcodeproj` in Xcode and press Run (Xcode uses ad-hoc signing automatically from the project's `CODE_SIGN_IDENTITY = "-"` setting; it inherits the same `ADHOC_SIGNING` flag).
 
 ## Run
 
@@ -289,7 +288,7 @@ xattr -dr com.apple.quarantine build/Build/Products/Release/notchmate.app
 
 If macOS still refuses to open it, go to **System Settings > Privacy & Security**, scroll to the message about `notchmate` being blocked, and click **Open Anyway**.
 
-> **Signing requirement:** the `codesign` step above is mandatory for the Spotify widget to work.
+> **Signing requirement:** building via `build.sh` is mandatory for the Spotify widget to work.
 > The app must be signed with `--options runtime` (hardened runtime) and the `com.apple.security.automation.apple-events` entitlement.
 > Without these, macOS 26 silently blocks all outgoing Apple Events before TCC can record or prompt - the Spotify widget stays stuck on "Nothing playing" and the app never appears in System Settings > Privacy & Security > Automation.
 > Ad-hoc signing (`--sign -`) is free; no developer account needed.
@@ -344,7 +343,7 @@ This deletes the tokens from Keychain and clears the session.
 The **Spotify (AppleScript)** source polls the Spotify desktop app once per second over AppleScript.
 It requires Automation/TCC permission and the hardened runtime entitlement.
 
-**Prerequisite:** the binary must be ad-hoc signed (see the `codesign` step in [Build](#build) above).
+**Prerequisite:** the binary must be ad-hoc signed (build via `./build.sh`, see [Build](#build) above).
 Without a signature, macOS TCC has no stable identity to prompt for, and the Spotify permission never appears.
 
 The Spotify widget talks to the Spotify desktop app via AppleScript.

@@ -10,13 +10,14 @@ enum LayoutModule: String, CaseIterable, Identifiable {
     // Lyrics are no longer a standalone module: the current line is folded into the
     // unified Media Player tile (see MediaWidget). The `lyrics` case was removed; saved
     // preferences referencing it are dropped harmlessly by the rawValue compactMap.
-    case media, mochi, timer, git, claude, stats
+    // The mascot is also not a module: it is collapsed-strip-only (see `mascotEnabled`),
+    // so a stale "mochi" raw value from older builds is dropped harmlessly too.
+    case media, timer, git, claude, stats
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
         case .media:  return "Media Player"
-        case .mochi:  return "Mascot"
         case .timer:  return "Focus Timer"
         case .git:    return "Git Status"
         case .claude: return "Claude Sessions"
@@ -28,7 +29,6 @@ enum LayoutModule: String, CaseIterable, Identifiable {
     var summary: String {
         switch self {
         case .media:  return "Now playing, transport, and live lyrics"
-        case .mochi:  return "Animated mascot that reacts to music"
         case .timer:  return "Pomodoro timer with focus streak heatmap"
         case .git:    return "Branch and status of the focused repo"
         case .claude: return "Live Claude Code sessions (click to manage)"
@@ -39,7 +39,6 @@ enum LayoutModule: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .media:  return "music.note"
-        case .mochi:  return "face.smiling"
         case .timer:  return "timer"
         case .git:    return "arrow.triangle.branch"
         case .claude: return "sparkles"
@@ -84,7 +83,7 @@ final class NotchPreferences: ObservableObject {
 
     // MARK: - Layout module defaults
     static let defaultModuleOrder: [LayoutModule] = [
-        .media, .claude, .timer, .mochi, .git, .stats
+        .media, .claude, .timer, .git, .stats
     ]
     static let defaultEnabledModules: Set<LayoutModule> = [.media, .claude, .timer]
 
@@ -97,6 +96,12 @@ final class NotchPreferences: ObservableObject {
 
     @Published var mascotCharacter: MascotCharacter {
         didSet { UserDefaults.standard.set(mascotCharacter.rawValue, forKey: "mascotCharacter") }
+    }
+
+    /// Whether the mascot shows in the collapsed strip. The mascot is collapsed-only -
+    /// it is no longer a `LayoutModule` and never takes an expanded grid tile.
+    @Published var mascotEnabled: Bool {
+        didSet { UserDefaults.standard.set(mascotEnabled, forKey: "mascotEnabled") }
     }
 
     // MARK: - General
@@ -239,6 +244,11 @@ final class NotchPreferences: ObservableObject {
         let mascotRaw = ud.string(forKey: "mascotCharacter") ?? "mochi"
         let mascot = MascotCharacter(rawValue: mascotRaw) ?? .mochi
         _mascotCharacter = Published(wrappedValue: mascot)
+
+        // Mascot shows in the collapsed strip by default (it is no longer a layout module).
+        let mascotOn = ud.object(forKey: "mascotEnabled") != nil
+            ? ud.bool(forKey: "mascotEnabled") : true
+        _mascotEnabled = Published(wrappedValue: mascotOn)
 
         let menuIcon = ud.object(forKey: "showMenuBarIcon") != nil
             ? ud.bool(forKey: "showMenuBarIcon") : true
