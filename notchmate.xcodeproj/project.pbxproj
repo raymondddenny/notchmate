@@ -16,6 +16,7 @@
 		2222222222222222222222FA /* SpotifyWebController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111FA /* SpotifyWebController.swift */; };
 		2222222222222222222222B7 /* ClaudeSessionsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A8 /* ClaudeSessionsController.swift */; };
 		2222222222222222222222B8 /* ClaudeSessionsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111A9 /* ClaudeSessionsWidget.swift */; };
+		2222222222222222222222E7 /* ClaudeHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111E7 /* ClaudeHookInstaller.swift */; };
 		2222222222222222222222B9 /* MochiMood.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AA /* MochiMood.swift */; };
 		2222222222222222222222BA /* MochiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AB /* MochiView.swift */; };
 		2222222222222222222222BB /* GitController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1111111111111111111111AC /* GitController.swift */; };
@@ -59,6 +60,7 @@
 		1111111111111111111111A7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1111111111111111111111A8 /* ClaudeSessionsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSessions/ClaudeSessionsController.swift; sourceTree = "<group>"; };
 		1111111111111111111111A9 /* ClaudeSessionsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSessions/ClaudeSessionsWidget.swift; sourceTree = "<group>"; };
+		1111111111111111111111E7 /* ClaudeHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSessions/ClaudeHookInstaller.swift; sourceTree = "<group>"; };
 		1111111111111111111111AA /* MochiMood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MochiMood.swift; sourceTree = "<group>"; };
 		1111111111111111111111AB /* MochiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mochi/MochiView.swift; sourceTree = "<group>"; };
 		1111111111111111111111AC /* GitController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Git/GitController.swift; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 				1111111111111111111111FA /* SpotifyWebController.swift */,
 				1111111111111111111111A8 /* ClaudeSessionsController.swift */,
 				1111111111111111111111A9 /* ClaudeSessionsWidget.swift */,
+				1111111111111111111111E7 /* ClaudeHookInstaller.swift */,
 				1111111111111111111111AA /* MochiMood.swift */,
 				1111111111111111111111AB /* MochiView.swift */,
 				1111111111111111111111AC /* GitController.swift */,
@@ -247,6 +250,7 @@
 				2222222222222222222222FA /* SpotifyWebController.swift in Sources */,
 				2222222222222222222222B7 /* ClaudeSessionsController.swift in Sources */,
 				2222222222222222222222B8 /* ClaudeSessionsWidget.swift in Sources */,
+				2222222222222222222222E7 /* ClaudeHookInstaller.swift in Sources */,
 				2222222222222222222222B9 /* MochiMood.swift in Sources */,
 				2222222222222222222222BA /* MochiView.swift in Sources */,
 				2222222222222222222222BB /* GitController.swift in Sources */,

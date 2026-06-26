@@ -1,59 +1,69 @@
 import AppKit
 import Combine
 
-/// One running Claude Code session, keyed by process id. `dir` is the full working
-/// directory path when it could be resolved (else nil); `project` is its basename.
+/// Live state of one Claude Code session, as reported by its hooks.
+/// running = yellow (working), waiting = red (needs confirmation/input),
+/// idle = green (finished a turn / ready for the next).
+enum SessionStatus: String {
+    case running, waiting, idle
+
+    /// Unknown strings degrade to idle (green) rather than vanishing.
+    init(raw: String) { self = SessionStatus(rawValue: raw) ?? .idle }
+}
+
+/// One Claude Code session, keyed by its hook `session_id`. `pid` is the resolved
+/// `claude` process (used for the Stop action and liveness); `dir` is the full working
+/// directory; `project` is its basename; `branch` is the git branch (nil if none).
 struct ClaudeSession: Equatable, Identifiable {
-    let id: Int          // pid
-    let dir: String?     // full cwd path (reused by GitController)
+    let id: String          // session_id (stable for the life of the session)
+    let pid: Int
+    let name: String?       // discriminator (firstmate home / tmux session); distinguishes same-cwd sessions
+    let dir: String?
     let project: String?
-    let branch: String?  // current git branch in that dir, nil if not a git repo
+    let branch: String?
+    let status: SessionStatus
+    let updated: Date
+
+    /// Best human label: the discriminator when it's meaningful (not just the pid
+    /// fallback), else the project basename. Keeps firstmate crewmates sharing one cwd
+    /// readable (notchy / wedding-dashboard) without showing a bare pid for plain sessions.
+    var displayName: String {
+        if let name, !name.isEmpty, name != String(pid) { return name }
+        return project ?? "session"
+    }
 }
 
-/// One project with running sessions, for the expanded list.
-struct ClaudeProjectGroup: Equatable, Identifiable {
-    let id: String       // project name (or "session" bucket)
-    let name: String
-    let count: Int
-}
-
-/// Detects live Claude Code sessions by enumerating running `claude` processes and
-/// publishes a count (+ per-project grouping) for the notch. Scans on a background
-/// queue every few seconds and publishes to the UI on main. Degrades to an empty,
-/// silent state if the tools are unavailable - never spams errors.
+/// Reads the per-session status files the Claude Code hooks write to
+/// `~/.notchmate/sessions/*.json` and publishes them as live traffic-light state for the
+/// notch. A session is dropped when its `pid` is no longer alive or its file is very stale
+/// (hook missed its SessionEnd). Scans on a background queue every few seconds and
+/// publishes on main; degrades silently to an empty list if the dir is absent.
 ///
-/// Detection: argv[0] basename == "claude". Subcommand invocations like
-/// `claude mcp login` (argv[1] is a bareword, not a flag) are excluded so the count
-/// reflects interactive sessions, not transient CLI helpers. Project name is the
-/// basename of each process's cwd, resolved via `lsof`.
+/// State comes from hooks, not a process scan: only the hooks can tell running vs waiting
+/// vs idle apart. Install them via Settings > Claude Sessions > Enable status lights
+/// (see `ClaudeHookInstaller`).
 final class ClaudeSessionsController: ObservableObject {
-    /// Shared instance so the notch panel and the Claude Sessions settings pane observe
-    /// the same live session list (and the pane's Stop acts on the same PIDs).
+    /// Shared so the notch panel and the settings pane observe the same live list (and the
+    /// pane's Stop acts on the same PIDs).
     static let shared = ClaudeSessionsController()
 
     @Published private(set) var sessions: [ClaudeSession] = []
 
     var count: Int { sessions.count }
+    var runningCount: Int { sessions.lazy.filter { $0.status == .running }.count }
+    var waitingCount: Int { sessions.lazy.filter { $0.status == .waiting }.count }
+    var idleCount: Int { sessions.lazy.filter { $0.status == .idle }.count }
 
-    /// Sessions grouped by project name for the expanded view. Sessions with no
-    /// resolvable project fall into a generic "session" bucket.
-    var groups: [ClaudeProjectGroup] {
-        var order: [String] = []
-        var counts: [String: Int] = [:]
-        for s in sessions {
-            let key = s.project ?? "session"
-            if counts[key] == nil { order.append(key) }
-            counts[key, default: 0] += 1
-        }
-        return order.map { ClaudeProjectGroup(id: $0, name: $0, count: counts[$0] ?? 0) }
-    }
+    /// Drop a session whose file hasn't been touched in this long even if its pid still
+    /// looks alive - guards against pid reuse after a session died without SessionEnd.
+    private static let staleAfter: TimeInterval = 6 * 60 * 60
 
     private var timer: Timer?
     private let queue = DispatchQueue(label: "notchmate.claude.scan")
 
     func start() {
         scan()
-        let timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.scan()
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -72,24 +82,23 @@ final class ClaudeSessionsController: ObservableObject {
         case failed(Int32)  // any other errno
     }
 
-    /// Sends SIGTERM to exactly one resolved Claude session PID and rescans.
-    /// SIGTERM (not SIGKILL) lets `claude` shut down cleanly. We only ever target the
-    /// pid that detection resolved as a `claude` process - never a broad sweep. Confirm
-    /// at the call site before invoking.
+    /// Sends SIGTERM to exactly one resolved Claude session PID and rescans. SIGTERM (not
+    /// SIGKILL) lets `claude` shut down cleanly. We only ever target the pid the hook
+    /// recorded for this session - never a broad sweep. Confirm at the call site first.
     @discardableResult
     func stop(_ session: ClaudeSession) -> StopResult {
-        let pid = pid_t(session.id)
+        let pid = pid_t(session.pid)
         guard pid > 0 else { return .failed(EINVAL) }
         let rc = kill(pid, SIGTERM)
         if rc == 0 {
-            // Optimistically drop it from the list so the UI updates immediately; the
-            // next scan reconciles ground truth.
+            // Optimistically drop it so the UI updates immediately; the SessionEnd hook (or
+            // the next liveness scan) reconciles ground truth.
             sessions.removeAll { $0.id == session.id }
             scan()
             return .ok
         }
         let err = errno
-        NSLog("[ClaudeSessionsController] SIGTERM to pid %d failed: errno %d", session.id, err)
+        NSLog("[ClaudeSessionsController] SIGTERM to pid %d failed: errno %d", session.pid, err)
         switch err {
         case EPERM: return .notPermitted
         case ESRCH: scan(); return .alreadyGone
@@ -112,85 +121,56 @@ final class ClaudeSessionsController: ObservableObject {
         }
     }
 
+    /// Decoded shape of a `~/.notchmate/sessions/<id>.json` status file.
+    private struct StatusFile: Decodable {
+        let state: String
+        let name: String?
+        let project: String?
+        let branch: String?
+        let cwd: String?
+        let pid: Int
+        let updated: Double   // epoch seconds
+    }
+
     private static func detect() -> [ClaudeSession] {
-        // pid -> argv string for every process; cheap enough to scan in full.
-        guard let psOut = run("/bin/ps", ["-axww", "-o", "pid=,args="]) else { return [] }
+        let dir = ClaudeHookInstaller.sessionsDir
+        let fm = FileManager.default
+        guard let names = try? fm.contentsOfDirectory(atPath: dir) else { return [] }
 
-        var pids: [Int] = []
-        for line in psOut.split(separator: "\n") {
-            let trimmed = line.drop(while: { $0 == " " })
-            guard let sp = trimmed.firstIndex(of: " ") else { continue }
-            guard let pid = Int(trimmed[..<sp]) else { continue }
-            let argv = trimmed[trimmed.index(after: sp)...].trimmingCharacters(in: .whitespaces)
-            if isClaudeSession(argv) { pids.append(pid) }
+        var result: [ClaudeSession] = []
+        let now = Date()
+        for name in names where name.hasSuffix(".json") {
+            let path = "\(dir)/\(name)"
+            guard let data = fm.contents(atPath: path),
+                  let f = try? JSONDecoder().decode(StatusFile.self, from: data) else { continue }
+
+            let updated = Date(timeIntervalSince1970: f.updated)
+            // Drop sessions whose process is gone, or whose file is implausibly stale.
+            guard isAlive(f.pid), now.timeIntervalSince(updated) < staleAfter else {
+                try? fm.removeItem(atPath: path)   // tidy up the orphan
+                continue
+            }
+            result.append(ClaudeSession(
+                id: String(name.dropLast(5)),      // strip ".json"
+                pid: f.pid,
+                name: f.name?.isEmpty == false ? f.name : nil,
+                dir: f.cwd?.isEmpty == false ? f.cwd : nil,
+                project: f.project?.isEmpty == false ? f.project : nil,
+                branch: f.branch?.isEmpty == false ? f.branch : nil,
+                status: SessionStatus(raw: f.state),
+                updated: updated
+            ))
         }
-        if pids.isEmpty { return [] }
-
-        let cwds = resolveCwds(pids)
-        let branches = resolveBranches(cwds)
-        return pids.map { ClaudeSession(id: $0, dir: cwds[$0], project: cwds[$0].map(projectName), branch: branches[$0]) }
+        // Stable order so the lights don't reshuffle: by pid.
+        return result.sorted { $0.pid < $1.pid }
     }
 
-    /// True when argv is an interactive `claude` session: argv[0] is the `claude`
-    /// executable and argv[1] (if any) is a flag, not a subcommand bareword.
-    private static func isClaudeSession(_ argv: String) -> Bool {
-        let tokens = argv.split(separator: " ", omittingEmptySubsequences: true)
-        guard let first = tokens.first else { return false }
-        guard lastPathComponent(String(first)) == "claude" else { return false }
-        if tokens.count >= 2 { return tokens[1].hasPrefix("-") }
-        return true
-    }
-
-    /// pid -> cwd path, via one `lsof` call over all candidate pids.
-    private static func resolveCwds(_ pids: [Int]) -> [Int: String] {
-        let csv = pids.map(String.init).joined(separator: ",")
-        guard let out = run("/usr/sbin/lsof", ["-a", "-d", "cwd", "-p", csv, "-Fpn"]) else { return [:] }
-        var map: [Int: String] = [:]
-        var current: Int?
-        for line in out.split(separator: "\n") {
-            let tag = line.first
-            let value = String(line.dropFirst())
-            if tag == "p" { current = Int(value) }
-            else if tag == "n", let pid = current { map[pid] = value }
-        }
-        return map
-    }
-
-    /// pid -> git branch, one subprocess per resolved dir. Detached HEAD and non-git
-    /// dirs return nil (widget omits the branch label rather than showing "HEAD").
-    private static func resolveBranches(_ cwds: [Int: String]) -> [Int: String] {
-        var result: [Int: String] = [:]
-        for (pid, dir) in cwds {
-            guard let raw = run("/usr/bin/git", ["-C", dir, "rev-parse", "--abbrev-ref", "HEAD"]) else { continue }
-            let branch = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !branch.isEmpty && branch != "HEAD" { result[pid] = branch }
-        }
-        return result
-    }
-
-    private static func projectName(_ path: String) -> String {
-        let base = lastPathComponent(path)
-        return base.isEmpty ? path : base
-    }
-
-    private static func lastPathComponent(_ path: String) -> String {
-        String(path.split(separator: "/").last ?? Substring(path))
-    }
-
-    // MARK: - Process
-
-    /// Runs a tool and returns stdout, or nil on any launch/exit failure. Silent by
-    /// design: a missing tool or permission error degrades to "no sessions".
-    private static func run(_ launchPath: String, _ args: [String]) -> String? {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: launchPath)
-        task.arguments = args
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = FileHandle.nullDevice
-        do { try task.run() } catch { return nil }
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        task.waitUntilExit()
-        return String(data: data, encoding: .utf8)
+    /// True if a process with this pid exists. `kill(pid, 0)` returns 0 when we may signal
+    /// it, or EPERM when it exists but is owned by someone else (still alive). Only ESRCH
+    /// means truly gone.
+    private static func isAlive(_ pid: Int) -> Bool {
+        guard pid > 0 else { return false }
+        if kill(pid_t(pid), 0) == 0 { return true }
+        return errno == EPERM
     }
 }

@@ -52,7 +52,7 @@ final class GitController: ObservableObject {
 
     /// Newest session (highest pid) that has a resolvable dir.
     static func pickDir(_ sessions: [ClaudeSession]) -> String? {
-        sessions.compactMap { s in s.dir.map { (s.id, $0) } }
+        sessions.compactMap { s in s.dir.map { (s.pid, $0) } }
             .max { $0.0 < $1.0 }?.1
     }
 
@@ -124,9 +124,11 @@ final class GitController: ObservableObject {
 #if DEBUG
     /// Self-check for the two pure helpers. Runnable (called from the widget preview).
     static func runSelfCheck() {
-        let s = [ClaudeSession(id: 10, dir: "/a", project: "a"),
-                 ClaudeSession(id: 42, dir: "/b", project: "b"),
-                 ClaudeSession(id: 30, dir: nil, project: nil)]
+        func mk(_ pid: Int, _ dir: String?, _ project: String?) -> ClaudeSession {
+            ClaudeSession(id: "s\(pid)", pid: pid, name: nil, dir: dir, project: project,
+                          branch: nil, status: .idle, updated: Date(timeIntervalSince1970: 0))
+        }
+        let s = [mk(10, "/a", "a"), mk(42, "/b", "b"), mk(30, nil, nil)]
         assert(pickDir(s) == "/b", "newest pid with a dir wins")
         assert(pickDir([]) == nil)
         assert(parseAheadBehind("2\t5") == (5, 2), "left=behind right=ahead")

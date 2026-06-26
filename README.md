@@ -167,6 +167,53 @@ A responsive UI + polish pass over the expanded grid, collapsed strip, and HUD:
 - **Collapsed mascot at the left edge.** In the collapsed strip the mascot is pinned to the far left while the now-playing chips stay centered under the notch. The mascot is also smaller and cuter in the expanded view.
 - **Now-playing animation in the collapsed strip.** The collapsed media chip shows animated equalizer bars (bouncing while playing, still when paused) ahead of the transport controls.
 
+## Slice 8 (current)
+
+**Claude session traffic lights.** The Claude Sessions module now shows a live status light per session instead of a bare count, so a glance at the notch tells you what every session is doing:
+
+- 🟡 **yellow = running** - the session is actively working a turn.
+- 🔴 **red = waiting** - it needs you (a confirmation, permission, or input prompt).
+- 🟢 **green = idle/done** - the turn finished; it is ready for the next thing.
+
+Collapsed, the module is a row of colored dots (one per session, with a "+N" overflow); expanded, it is a per-session list with the light, a name, the git branch, and the status word. Dead or long-stale sessions disappear automatically, and clicking still opens **Settings > Claude Sessions** to stop a session.
+
+### Enabling the lights
+
+The live state comes from **Claude Code hooks**, so it has to be switched on once:
+
+1. Open **Settings > Claude Sessions** and turn on **Enable status lights**.
+2. That installs a tiny helper (`~/.notchmate/bin/notchmate-hook`) and merges notchmate's hooks into `~/.claude/settings.json`. Your existing hooks and settings are preserved, and a backup is written to `~/.claude/settings.json.notchmate-backup`.
+3. It applies to **every** Claude Code session on this Mac (interactive terminals and firstmate crewmates alike), since the hooks live in your user-level config.
+4. **Restart any already-running Claude sessions** so they pick up the new hooks. New sessions get them automatically.
+
+Turning the toggle off removes only notchmate's entries (your other hooks stay intact). The change is idempotent - toggling repeatedly never duplicates or loses anything.
+
+### How a session is labelled
+
+Each session shows a discriminator so concurrent sessions in the same directory still read distinctly. The helper prefers `basename($FM_HOME)` (e.g. `notchy` / `wedding-dashboard`), then the tmux session name, then the process id. So several firstmate crewmates sharing the `firstmate` working directory on branch `main` appear as their distinct project names rather than collapsing into identical rows.
+
+### What it maps
+
+| Claude Code hook  | Light            |
+|-------------------|------------------|
+| `SessionStart`    | 🟢 idle (register) |
+| `UserPromptSubmit`| 🟡 running        |
+| `PreToolUse`      | 🟡 running        |
+| `Notification`    | 🔴 waiting        |
+| `Stop`            | 🟢 idle           |
+| `SessionEnd`      | (session removed) |
+
+### `~/.notchmate/` layout
+
+```
+~/.notchmate/
+  bin/notchmate-hook            # the installed hook helper (POSIX sh, zero deps)
+  sessions/<session_id>.json    # one live status file per session:
+                                #   { state, name, project, branch, cwd, pid, updated }
+```
+
+The widget reads `sessions/*.json`; the helper writes them on each hook event. Files for dead or >6h-stale sessions are pruned automatically.
+
 ## Requirements
 
 - macOS 14 (Sonoma) or later

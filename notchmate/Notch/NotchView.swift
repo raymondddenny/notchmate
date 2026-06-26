@@ -130,7 +130,10 @@ struct NotchView: View {
                 if visible.contains(.media) {
                     MediaWidget(media: media, expanded: false)
                 }
-                // .claude is expanded-only; omitted from collapsed strip to keep it lean.
+                // Claude collapsed = traffic-light dots (glanceable status at a glance).
+                if visible.contains(.claude) {
+                    ClaudeSessionsWidget(sessions: claude, expanded: false, onTap: onOpenClaudeSettings)
+                }
                 if visible.contains(.timer) {
                     FocusTimerWidget(timer: focus, expanded: false)
                 }
