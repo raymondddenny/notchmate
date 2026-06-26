@@ -89,6 +89,9 @@ final class SpotifyWebController: ObservableObject {
     /// Called once from MediaController.start(). Auto-connects if tokens are already
     /// stored in Keychain from a previous session.
     func start() {
+        // Migrate from old login-keychain to data-protection keychain on first launch
+        // after the upgrade. This is a no-op once the new location has tokens.
+        SpotifyKeychain.migrateLoginKeychainIfNeeded()
         guard SpotifyKeychain.load("access_token") != nil else { return }
         authState = .connected
         // Polling is started by MediaController.rebind() when source == .spotifyWeb.
@@ -469,23 +472,43 @@ final class SpotifyWebController: ObservableObject {
 
 // MARK: - Keychain helpers
 
-/// Token storage for the Spotify Web API. Tokens are stored in the macOS Keychain
-/// under the service name "notchmate.spotify.webapi" and never written to disk
-/// or logged in plaintext.
+/// Token storage for the Spotify Web API.
+///
+/// Tokens live in the **data-protection keychain** (`kSecUseDataProtectionKeychain = true`),
+/// NOT the login (file-based) keychain. This is load-bearing:
+///
+/// - The login keychain gates access via a per-item ACL bound to the app's code hash.
+///   Every ad-hoc rebuild produces a new binary hash, so macOS treats each build as an
+///   unknown app and shows the "enter your login keychain password" dialog. "Always Allow"
+///   only persists for the exact signature - the next rebuild prompts again.
+/// - The data-protection keychain gates access by entitlement (`keychain-access-groups`)
+///   rather than binary hash. The entitlement is stable across ad-hoc rebuilds, so the
+///   prompt never fires.
+///
+/// Tokens are never written to disk or logged in plaintext.
+/// Service name: "notchmate.spotify.webapi"
+///
+/// Developer ID note: when the app is signed with a Developer ID, update the
+/// keychain-access-groups entitlement value from "com.notchmate.app" to
+/// "TEAMID.com.notchmate.app" and the first launch will re-prompt Spotify login
+/// (one-time, expected identity change). The login keychain ACL then sticks
+/// permanently - no more per-rebuild prompts.
 enum SpotifyKeychain {
     private static let service = "notchmate.spotify.webapi"
 
     static func save(_ value: String, key: String) {
         let data = Data(value.utf8)
         let base: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
+            kSecClass as String:                    kSecClassGenericPassword,
+            kSecAttrService as String:              service,
+            kSecAttrAccount as String:              key,
+            kSecUseDataProtectionKeychain as String: true,
         ]
         // Delete any existing entry then re-add (simpler than SecItemUpdate).
         SecItemDelete(base as CFDictionary)
         var addAttrs = base
         addAttrs[kSecValueData as String] = data
+        addAttrs[kSecAttrSynchronizable as String] = false  // never sync tokens to iCloud
         let status = SecItemAdd(addAttrs as CFDictionary, nil)
         if status != errSecSuccess {
             NSLog("[SpotifyWeb] Keychain save error for key '%@': %d", key, status)
@@ -494,11 +517,12 @@ enum SpotifyKeychain {
 
     static func load(_ key: String) -> String? {
         let query: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String:  true,
-            kSecMatchLimit as String:  kSecMatchLimitOne,
+            kSecClass as String:                    kSecClassGenericPassword,
+            kSecAttrService as String:              service,
+            kSecAttrAccount as String:              key,
+            kSecReturnData as String:               true,
+            kSecMatchLimit as String:               kSecMatchLimitOne,
+            kSecUseDataProtectionKeychain as String: true,
         ]
         var result: AnyObject?
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
@@ -508,11 +532,55 @@ enum SpotifyKeychain {
 
     static func delete(_ key: String) {
         let query: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
+            kSecClass as String:                    kSecClassGenericPassword,
+            kSecAttrService as String:              service,
+            kSecAttrAccount as String:              key,
+            kSecUseDataProtectionKeychain as String: true,
         ]
         SecItemDelete(query as CFDictionary)
+    }
+
+    /// One-time migration: reads tokens from the old login-keychain location and
+    /// writes them to the data-protection keychain, then deletes the old items.
+    ///
+    /// Uses `kSecUseAuthenticationUIFail` so it never triggers a password dialog.
+    /// If the old item can't be read without auth (most likely after a rebuild),
+    /// the read returns nil and we still try to delete the orphan so it stops
+    /// appearing in Keychain Access. The user is effectively asked to reconnect
+    /// Spotify once - they were being prompted on every rebuild anyway.
+    static func migrateLoginKeychainIfNeeded() {
+        for key in ["access_token", "refresh_token"] {
+            // Skip if already present in the data-protection keychain.
+            guard load(key) == nil else { continue }
+
+            // Attempt a no-UI read from the old login (file-based) keychain.
+            let readQuery: [String: Any] = [
+                kSecClass as String:               kSecClassGenericPassword,
+                kSecAttrService as String:         service,
+                kSecAttrAccount as String:         key,
+                kSecReturnData as String:          true,
+                kSecMatchLimit as String:          kSecMatchLimitOne,
+                kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail,
+                // kSecUseDataProtectionKeychain absent → targets file-based keychains only
+            ]
+            var result: AnyObject?
+            if SecItemCopyMatching(readQuery as CFDictionary, &result) == errSecSuccess,
+               let data = result as? Data,
+               let value = String(data: data, encoding: .utf8) {
+                save(value, key: key)  // write to data-protection keychain
+                NSLog("[SpotifyWeb] Migrated '%@' from login keychain to data-protection keychain", key)
+            }
+
+            // Delete the old login-keychain item to clean up the orphan.
+            // Without kSecUseDataProtectionKeychain this targets file-based keychains only,
+            // so the newly written data-protection item is not affected.
+            let delQuery: [String: Any] = [
+                kSecClass as String:    kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: key,
+            ]
+            SecItemDelete(delQuery as CFDictionary)  // ignore status
+        }
     }
 }
 

@@ -4,5 +4,13 @@
 <dict>
 	<key>com.apple.security.automation.apple-events</key>
 	<true/>
+	<!-- keychain-access-groups enables the data-protection keychain (kSecUseDataProtectionKeychain).
+	     Access is gated by entitlement, not binary hash, so ad-hoc rebuilds never prompt.
+	     Ad-hoc: no team prefix, so the group is literally "com.notchmate.app".
+	     Developer ID: update this to "TEAMID.com.notchmate.app" and re-migrate tokens. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>com.notchmate.app</string>
+	</array>
 </dict>
 </plist>

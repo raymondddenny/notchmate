@@ -181,10 +181,12 @@ Headless, from the repo root (two commands - the signing step is required for Sp
 xcodebuild -project notchmate.xcodeproj -scheme notchmate -configuration Release \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 
-# 2. Ad-hoc sign with hardened runtime + Apple Events entitlement.
-#    Required for Spotify TCC: hardened runtime blocks outgoing Apple Events
-#    unless com.apple.security.automation.apple-events is present, and macOS 26
-#    requires this even for non-sandboxed apps.
+# 2. Ad-hoc sign with hardened runtime + entitlements.
+#    Two entitlements are active (see notchmate/notchmate.entitlements):
+#    - com.apple.security.automation.apple-events: required for Spotify AppleScript
+#      (macOS 26 blocks outgoing Apple Events without hardened runtime + this entitlement)
+#    - keychain-access-groups: enables the data-protection keychain for OAuth tokens
+#      (prevents the "enter login keychain password" prompt on every rebuild)
 codesign --force --deep --options runtime \
   --entitlements notchmate/notchmate.entitlements \
   --sign - build/Build/Products/Release/notchmate.app
@@ -197,9 +199,18 @@ build/Build/Products/Release/notchmate.app
 ```
 
 **After a rebuild:** the ad-hoc identity is derived from the binary hash, so it changes each time you rebuild.
-macOS will re-prompt for Automation access after each fresh build.
+macOS will re-prompt for Automation access (TCC for AppleScript) after each fresh build.
 Run both commands above again and approve the prompt when it appears.
-Stable per-developer signing (Developer ID, the eventual $99 path) eliminates re-prompts permanently.
+The Spotify Web API token (OAuth) is NOT affected by rebuilds - it lives in the data-protection keychain,
+which is gated by the `keychain-access-groups` entitlement rather than by binary hash, so it survives
+rebuilds without any password dialog.
+Stable per-developer signing (Developer ID, the eventual $99 path) eliminates the Automation re-prompt permanently too.
+
+**Developer ID upgrade path (future):** when switching from ad-hoc to Developer ID signing,
+update the `keychain-access-groups` entry in `notchmate/notchmate.entitlements` from `com.notchmate.app`
+to `TEAMID.com.notchmate.app` (your 10-character Apple team ID).
+The first launch after that change will require Spotify re-authorization once (new identity, different keychain access group).
+After that, the login-keychain ACL sticks permanently.
 
 Or open `notchmate.xcodeproj` in Xcode and press Run (Xcode uses ad-hoc signing automatically from the project's `CODE_SIGN_IDENTITY = "-"` setting).
 
