@@ -64,6 +64,11 @@ enum Theme {
     static let accentCPU     = Color(red: 0.95, green: 0.55, blue: 0.35) // warm
     static let accentMem     = Color(red: 0.55, green: 0.70, blue: 0.95) // cool
 
+    // MARK: - Claude session status lights (traffic light, accessible on dark charcoal)
+    static let statusRunning = Color(red: 0.98, green: 0.78, blue: 0.27) // amber - working
+    static let statusWaiting = Color(red: 0.97, green: 0.36, blue: 0.34) // red - needs input
+    static let statusIdle    = Color(red: 0.36, green: 0.82, blue: 0.47) // green - ready
+
     // MARK: - Shared fills
     /// Progress-bar / level-bar track background.
     static let trackBackground = Color.white.opacity(0.12)
