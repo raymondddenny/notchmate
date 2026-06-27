@@ -1,6 +1,6 @@
 cask "notchmate" do
-  version "0.1.6"
-  sha256 "67ac8a5675b15287a12279a497ad6751951d4f197180e08f7c26b4d6d2b6361c"
+  version "0.1.7"
+  sha256 "a1abf653678e329c3dae49133849ddd8c62e1b5a78e9c144c6a495f3c9b5437a"
 
   url "https://github.com/raymondddenny/notchmate/releases/download/v#{version}/notchmate-#{version}.dmg",
       verified: "github.com/raymondddenny/notchmate/"
