@@ -127,9 +127,22 @@ struct NotchView: View {
 
     // MARK: - Collapsed strip
 
-    // HUD events now appear in a separate panel below the notch (see NotchWindowController).
+    // HUD events appear in a separate panel below the notch (see NotchWindowController).
+    // The current synced lyric line is folded into a second row beneath the chips; the
+    // window controller grows the collapsed panel to fit it (see refitCollapsedForLyric).
     private var collapsedStrip: some View {
-        collapsedChips
+        VStack(spacing: 2) {
+            collapsedChips
+            if prefs.visibleModules.contains(.media), lyrics.currentLine != nil {
+                HStack(spacing: 6) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Theme.textSecondary)
+                    LyricLineView(lyrics: lyrics)
+                }
+                .padding(.horizontal, Theme.sp2)
+            }
+        }
     }
 
     private var collapsedChips: some View {
