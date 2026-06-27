@@ -214,6 +214,22 @@ Each session shows a discriminator so concurrent sessions in the same directory 
 
 The widget reads `sessions/*.json`; the helper writes them on each hook event. Files for dead or >6h-stale sessions are pruned automatically.
 
+## Install via Homebrew
+
+```sh
+brew tap raymondddenny/notchmate https://github.com/raymondddenny/notchmate
+brew install --cask notchmate
+```
+
+Update to the latest release:
+
+```sh
+brew upgrade --cask notchmate
+```
+
+notchmate is ad-hoc signed (no paid Apple Developer cert), so the cask strips the quarantine attribute on install to keep Gatekeeper from blocking launch.
+If a build ever still refuses to open, reinstall with `brew install --cask --no-quarantine notchmate`.
+
 ## Requirements
 
 - macOS 14 (Sonoma) or later
