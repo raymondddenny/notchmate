@@ -24,6 +24,9 @@ final class NotchWindowController {
     // exclude the cursor. Cancelled immediately on the next mouseEntered so the
     // oscillation loop never starts. Duration > animation duration (0.22s).
     private var collapseTask: DispatchWorkItem?
+    /// Kept so the SwiftUI root can be rebuilt when the active screen's notch geometry
+    /// changes (e.g. lid open <-> clamshell, plugging an external display).
+    private weak var hostingView: NSHostingView<AnyView>?
 
     /// Layout numbers derived from the screen. Heights/widths are deliberately simple
     /// constants; the only screen-dependent value is the physical notch size.
@@ -77,28 +80,14 @@ final class NotchWindowController {
     init(settings: SettingsWindowController) {
         self.settings = settings
         git = GitController(claude: claude)
-        geometry = NotchWindowController.computeGeometry(for: NSScreen.main)
+        geometry = NotchWindowController.computeGeometry(for: NotchWindowController.bestScreen())
         panel = NotchPanel(contentRect: NSRect(origin: .zero, size: geometry.collapsedSize))
 
-        let root = NotchView(
-            media: media,
-            claude: claude,
-            git: git,
-            focus: focus,
-            stats: stats,
-            lyrics: lyrics,
-            hasNotch: geometry.hasNotch,
-            topInset: geometry.topInset,
-            onExpandChange: { [weak self] expanded in
-                self?.handleExpandChange(expanded)
-            },
-            onOpenClaudeSettings: { [weak self] in
-                self?.settings.show(pane: .claude)
-            }
-        )
-        let hosting = NSHostingView(rootView: root)
+        let hosting = NSHostingView(rootView: AnyView(EmptyView()))
         hosting.autoresizingMask = [.width, .height]
         panel.contentView = hosting
+        hostingView = hosting
+        rebuildRootView()
 
         positionPanel(size: geometry.collapsedSize)
         setupHUDPanel()
@@ -143,6 +132,55 @@ final class NotchWindowController {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.updateLyricsPanel() }
             .store(in: &cancellables)
+
+        // Re-target the panels when the display configuration changes. Without this the
+        // geometry captured at launch can strand all three panels on a now-off screen
+        // (e.g. going clamshell), so the HUD/lyrics slide in invisibly off-screen while
+        // macOS shows its own HUD on the live display.
+        NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.handleScreenChange() }
+            .store(in: &cancellables)
+    }
+
+    /// Pick the screen to host the notch UI: prefer the physical-notch (built-in) screen
+    /// when it is active; otherwise fall back to the main screen. In clamshell the
+    /// built-in is absent, so this resolves to the external display.
+    private static func bestScreen() -> NSScreen? {
+        NSScreen.screens.first { $0.safeAreaInsets.top > 0 } ?? NSScreen.main
+    }
+
+    /// Rebuild the SwiftUI root so `hasNotch`/`topInset` track the current screen.
+    private func rebuildRootView() {
+        let root = NotchView(
+            media: media,
+            claude: claude,
+            git: git,
+            focus: focus,
+            stats: stats,
+            lyrics: lyrics,
+            hasNotch: geometry.hasNotch,
+            topInset: geometry.topInset,
+            onExpandChange: { [weak self] expanded in
+                self?.handleExpandChange(expanded)
+            },
+            onOpenClaudeSettings: { [weak self] in
+                self?.settings.show(pane: .claude)
+            }
+        )
+        hostingView?.rootView = AnyView(root)
+    }
+
+    /// Recompute geometry for the current best screen and reposition every panel.
+    private func handleScreenChange() {
+        geometry = NotchWindowController.computeGeometry(for: NotchWindowController.bestScreen())
+        rebuildRootView()
+        let size = isExpanded.value ? currentExpandedSize : geometry.collapsedSize
+        positionPanel(size: size)
+        positionLyricsPanel()
+        // Re-seat the floating panels so a visible HUD/lyric jumps to the live screen.
+        setHUDPanel(visible: hud.currentEvent != nil)
+        updateLyricsPanel()
     }
 
     func show() {

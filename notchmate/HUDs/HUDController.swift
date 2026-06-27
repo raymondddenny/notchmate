@@ -55,6 +55,11 @@ final class HUDController: ObservableObject {
         startBrightnessPolling()
         observeSuppressionPref()
         observeAppTermination()
+        // Apply suppression at launch when the toggle is already on, so the user does
+        // not have to re-toggle it every session for the native HUD to stay suppressed.
+        if NotchPreferences.shared.hudSuppressSystem {
+            suppressSystemHUD()
+        }
     }
 
     func stop() {
