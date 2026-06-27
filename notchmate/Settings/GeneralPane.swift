@@ -11,6 +11,11 @@ struct GeneralPane: View {
                     get: { prefs.launchAtLogin },
                     set: { prefs.launchAtLogin = $0 }
                 ))
+                if prefs.launchAtLoginError != nil {
+                    Text("Couldn't enable launch at login. Move notchmate to your Applications folder and launch it from there, then try again.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
             } footer: {
                 Text("If the menu-bar icon is hidden, hover over the notch to access Settings.")
                     .foregroundStyle(.secondary)
