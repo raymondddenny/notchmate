@@ -8,7 +8,7 @@ cask "notchmate" do
   desc "Notch companion app for macOS (media, Claude sessions, timer, HUDs)"
   homepage "https://github.com/raymondddenny/notchmate"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "notchmate.app"
 
