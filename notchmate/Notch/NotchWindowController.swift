@@ -89,8 +89,8 @@ final class NotchWindowController {
             lyrics: lyrics,
             hasNotch: geometry.hasNotch,
             topInset: geometry.topInset,
-            onHoverChange: { [weak self] hovering in
-                self?.handleHoverChange(hovering)
+            onExpandChange: { [weak self] expanded in
+                self?.handleExpandChange(expanded)
             },
             onOpenClaudeSettings: { [weak self] in
                 self?.settings.show(pane: .claude)
@@ -175,10 +175,10 @@ final class NotchWindowController {
     /// when the panel's tracking area passes through intermediate sizes during the
     /// expand animation. mouseEntered cancels the deferred work immediately, so real
     /// hover-exit still collapses promptly after the grace window.
-    private func handleHoverChange(_ hovering: Bool) {
+    private func handleExpandChange(_ expanded: Bool) {
         collapseTask?.cancel()
         collapseTask = nil
-        if hovering {
+        if expanded {
             setExpanded(true)
         } else {
             let task = DispatchWorkItem { [weak self] in self?.setExpanded(false) }
