@@ -6,3 +6,4 @@ DerivedData/
 # Xcode user-specific
 xcuserdata/
 *.xcworkspace/xcuserdata/
+dist/

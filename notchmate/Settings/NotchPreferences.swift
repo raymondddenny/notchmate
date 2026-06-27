@@ -324,6 +324,11 @@ final class NotchPreferences: ObservableObject {
     /// Reads the real SMAppService registration state; setter registers/unregisters.
     /// Reflects actual state so the toggle never lies, even in unsigned builds where
     /// register() will fail (SMAppService.mainApp.status stays .notRegistered).
+    /// Non-nil when the last register/unregister threw. Drives a hint in GeneralPane;
+    /// the common cause is launching a translocated/Downloads copy - SMAppService can
+    /// only persist a login item for an app run from /Applications.
+    @Published var launchAtLoginError: String?
+
     var launchAtLogin: Bool {
         get { SMAppService.mainApp.status == .enabled }
         set {
@@ -333,8 +338,10 @@ final class NotchPreferences: ObservableObject {
                 } else {
                     try SMAppService.mainApp.unregister()
                 }
+                launchAtLoginError = nil
             } catch {
                 NSLog("[NotchPreferences] SMAppService error: %@", error.localizedDescription)
+                launchAtLoginError = error.localizedDescription
             }
             objectWillChange.send()
         }
