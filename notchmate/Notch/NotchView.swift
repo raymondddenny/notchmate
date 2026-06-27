@@ -12,11 +12,15 @@ struct NotchView: View {
     @ObservedObject var lyrics: LyricsController
     let hasNotch: Bool
     let topInset: CGFloat
-    let onHoverChange: (Bool) -> Void
+    /// Signals the desired expanded state to the window controller so it can resize
+    /// the panel. Driven by the explicit expand button (true) and mouse-exit (false),
+    /// no longer by raw hover.
+    let onExpandChange: (Bool) -> Void
     /// Opens Settings to the Claude Sessions pane (invoked from the Claude tile).
     var onOpenClaudeSettings: () -> Void = {}
 
     @State private var hovering = false
+    @State private var expanded = false
     @ObservedObject private var prefs = NotchPreferences.shared
 
     var body: some View {
@@ -34,16 +38,22 @@ struct NotchView: View {
         .contentShape(Rectangle())
         .onHover { isHovering in
             hovering = isHovering
-            onHoverChange(isHovering)
+            // Hover only reveals the expand button now; it never auto-expands.
+            // Leaving the panel collapses it (controller applies the grace window).
+            if !isHovering {
+                expanded = false
+                onExpandChange(false)
+            }
         }
-        .animation(.easeOut(duration: 0.22), value: hovering)
+        .animation(.easeOut(duration: 0.22), value: expanded)
+        .animation(.easeOut(duration: 0.15), value: hovering)
     }
 
     // MARK: - Content
 
     @ViewBuilder
     private var content: some View {
-        if hovering {
+        if expanded {
             expandedGrid
         } else {
             collapsedStrip
@@ -139,8 +149,27 @@ struct NotchView: View {
                 }
             }
             Spacer(minLength: Theme.sp2)
+            expandButton
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Trailing affordance that expands the panel. Only visible while hovering -
+    /// expansion is now click-driven (hover no longer auto-expands).
+    private var expandButton: some View {
+        Button {
+            expanded = true
+            onExpandChange(true)
+        } label: {
+            Image(systemName: "chevron.down")
+                .font(Theme.chipFont)
+                .foregroundColor(Theme.textSecondary)
+                .frame(width: 18, height: 18)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .opacity(hovering ? 1 : 0)
+        .allowsHitTesting(hovering)
     }
 
     // MARK: - Background

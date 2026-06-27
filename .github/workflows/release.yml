@@ -1,0 +1,37 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches Info.plist
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PLIST=$(/usr/bin/plutil -extract CFBundleShortVersionString raw -o - notchmate/Info.plist)
+          [ "$TAG" = "$PLIST" ] || { echo "tag $TAG != Info.plist $PLIST"; exit 1; }
+      - name: Build DMG
+        run: ./package-dmg.sh
+      - name: Meta
+        id: m
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          echo "v=$V" >> "$GITHUB_OUTPUT"
+          echo "sha=$(shasum -a 256 dist/notchmate-$V.dmg | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "dist/notchmate-${{ steps.m.outputs.v }}.dmg" --generate-notes
+      - name: Bump cask
+        run: |
+          sed -i '' -E "s/^  version \".*\"/  version \"${{ steps.m.outputs.v }}\"/" Casks/notchmate.rb
+          sed -i '' -E "s/^  sha256 .*/  sha256 \"${{ steps.m.outputs.sha }}\"/" Casks/notchmate.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/notchmate.rb
+          git commit -m "chore: release notchmate ${{ steps.m.outputs.v }}"
+          git push origin HEAD:master
