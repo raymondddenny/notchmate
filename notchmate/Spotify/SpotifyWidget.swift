@@ -78,28 +78,28 @@ struct MediaWidget: View {
     // MARK: - Expanded
 
     private func expandedView(_ np: NowPlaying) -> some View {
-        // Unified media tile: track info on top, the live synced lyric line folded in
-        // beneath it (no separate Lyrics module), transport pinned to the bottom.
+        // Unified media tile: artwork + track info on the left, the live synced lyric
+        // line folded into the empty space on the right (no separate Lyrics module),
+        // transport pinned to the bottom.
         VStack(alignment: .leading, spacing: Theme.sp2) {
-            if prefs.musicLayout == .artwork {
-                HStack(spacing: Theme.sp3) {
+            HStack(spacing: prefs.musicLayout == .artwork ? Theme.sp3 : Theme.sp2) {
+                if prefs.musicLayout == .artwork {
                     artworkThumb(size: 48, corner: 8)
-                    trackInfo(np)
-                    Spacer(minLength: 0)
-                }
-            } else {
-                HStack(spacing: Theme.sp2) {
+                } else {
                     EqualizerBars(isPlaying: np.isPlaying)
-                    trackInfo(np)
+                }
+                trackInfo(np)
+                    .layoutPriority(1)
+                // Lyrics fill the empty space to the right of the track info; when no
+                // synced line is available a plain spacer keeps the layout stable.
+                if let lc = lyrics, lc.currentLine != nil {
+                    LyricLineView(lyrics: lc)
+                        .padding(.leading, Theme.sp3)
+                } else {
                     Spacer(minLength: 0)
                 }
             }
-            // Push the lyric + controls to the bottom so the current lyric line sits
-            // directly above the transport controls.
             Spacer(minLength: 0)
-            if let lc = lyrics, lc.currentLine != nil {
-                LyricLineView(lyrics: lc)
-            }
             controls(np)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
