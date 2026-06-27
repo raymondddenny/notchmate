@@ -1,6 +1,6 @@
 cask "notchmate" do
   version "0.1.0"
-  sha256 "0000000000000000000000000000000000000000000000000000000000000000" # placeholder; CI overwrites on first release
+  sha256 "3fa239dab6687a3648379ec3a05c68a9ecbcb4084a1b097dd46b07a46dbdc0d9"
 
   url "https://github.com/raymondddenny/notchmate/releases/download/v#{version}/notchmate-#{version}.dmg",
       verified: "github.com/raymondddenny/notchmate/"

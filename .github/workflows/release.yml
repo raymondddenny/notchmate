@@ -28,6 +28,9 @@ jobs:
         run: gh release create "$GITHUB_REF_NAME" "dist/notchmate-${{ steps.m.outputs.v }}.dmg" --generate-notes
       - name: Bump cask
         run: |
+          # Bump on top of the latest master, not the tag commit (which may be behind).
+          git fetch origin master
+          git checkout -B master origin/master
           sed -i '' -E "s/^  version \".*\"/  version \"${{ steps.m.outputs.v }}\"/" Casks/notchmate.rb
           sed -i '' -E "s/^  sha256 .*/  sha256 \"${{ steps.m.outputs.sha }}\"/" Casks/notchmate.rb
           git config user.name "github-actions[bot]"
