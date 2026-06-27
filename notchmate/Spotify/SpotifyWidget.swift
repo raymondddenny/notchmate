@@ -72,6 +72,8 @@ struct MediaWidget: View {
             }
             .disabled(premiumControlsDisabled)
             .opacity(premiumControlsDisabled ? 0.35 : 1)
+            // Album cover to the right of the transport controls.
+            artworkThumb(size: 24, corner: 5)
         }
     }
 
