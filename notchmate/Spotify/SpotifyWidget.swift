@@ -91,18 +91,34 @@ struct MediaWidget: View {
                 trackInfo(np)
                     .layoutPriority(1)
                 // Lyrics fill the empty space to the right of the track info; when no
-                // synced line is available a plain spacer keeps the layout stable.
+                // synced line is available, a muted status label shows why instead of
+                // leaving a blank gap.
                 if let lc = lyrics, lc.currentLine != nil {
                     LyricLineView(lyrics: lc)
                         .padding(.leading, Theme.sp3)
                 } else {
-                    Spacer(minLength: 0)
+                    Text(lyricsPlaceholder)
+                        .font(Theme.secondaryFont)
+                        .foregroundStyle(Theme.textTertiary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.leading, Theme.sp3)
                 }
             }
             Spacer(minLength: 0)
             controls(np)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// Status shown in the lyric slot when no active synced line is available.
+    private var lyricsPlaceholder: String {
+        guard let state = lyrics?.state else { return "No lyrics" }
+        switch state {
+        case .loading: return "Finding lyrics\u{2026}"
+        case .plain: return "No synced lyrics"
+        default: return "No lyrics"
+        }
     }
 
     private func trackInfo(_ np: NowPlaying) -> some View {
