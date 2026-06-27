@@ -131,7 +131,7 @@ struct NotchView: View {
     // The current synced lyric line is folded into a second row beneath the chips; the
     // window controller grows the collapsed panel to fit it (see refitCollapsedForLyric).
     private var collapsedStrip: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: Theme.sp1) {
             collapsedChips
             if prefs.visibleModules.contains(.media), lyrics.currentLine != nil {
                 HStack(spacing: 6) {
@@ -140,7 +140,8 @@ struct NotchView: View {
                         .foregroundStyle(Theme.textSecondary)
                     LyricLineView(lyrics: lyrics)
                 }
-                .padding(.horizontal, Theme.sp2)
+                .padding(.horizontal, Theme.sp3)
+                .padding(.bottom, Theme.sp1)
             }
         }
     }

@@ -45,8 +45,9 @@ final class NotchWindowController {
             return NSSize(width: max(notchWidth + 160, 260),
                           height: base + (withLyric ? Self.lyricRowHeight : 0))
         }
-        /// Extra height added below the chip strip to host the current lyric line.
-        static let lyricRowHeight: CGFloat = 26
+        /// Extra height added below the chip strip to host the current lyric line
+        /// (line + the spacing/padding around it in NotchView.collapsedStrip).
+        static let lyricRowHeight: CGFloat = 32
         /// Responsive expanded size for the horizontal grid.
         ///
         /// Width and height both derive from the actual content: the grid splits
@@ -233,12 +234,19 @@ final class NotchWindowController {
     /// Whether a synced lyric line is currently available (drives the collapsed panel's
     /// extra row; matches the condition NotchView uses to render the line).
     private var hasCollapsedLyric: Bool { lyrics.currentLine != nil }
+    /// Last applied lyric-row presence, so we only re-fit on the appear/disappear
+    /// transition - not on every line advance (which re-animated the frame and glitched).
+    private var collapsedLyricShown = false
 
     /// Re-fit the collapsed panel when the lyric line appears/disappears. No-op while
-    /// expanded (the lyric lives in the media tile there) so it never fights the grid size.
+    /// expanded (the lyric lives in the media tile there) so it never fights the grid size,
+    /// and a no-op when presence is unchanged so line-to-line advances don't re-animate.
     private func refitCollapsedForLyric() {
+        let want = hasCollapsedLyric
+        guard want != collapsedLyricShown else { return }
+        collapsedLyricShown = want
         guard !isExpanded.value else { return }
-        positionPanel(size: geometry.collapsedSize(withLyric: hasCollapsedLyric), animated: true)
+        positionPanel(size: geometry.collapsedSize(withLyric: want), animated: true)
     }
 
     /// Place the panel top-centered on its screen. On a notch Mac the top edge is
