@@ -21,6 +21,10 @@ struct NotchView: View {
 
     @State private var hovering = false
     @State private var expanded = false
+    /// Deferred collapse, mirroring NotchWindowController's grace window: absorbs the
+    /// spurious mouseExited AppKit fires while the panel animates through intermediate
+    /// sizes on expand. A real re-enter cancels it; a real exit collapses after the delay.
+    @State private var collapseTask: DispatchWorkItem?
     @ObservedObject private var prefs = NotchPreferences.shared
 
     var body: some View {
@@ -39,10 +43,20 @@ struct NotchView: View {
         .onHover { isHovering in
             hovering = isHovering
             // Hover only reveals the expand button now; it never auto-expands.
-            // Leaving the panel collapses it (controller applies the grace window).
-            if !isHovering {
-                expanded = false
-                onExpandChange(false)
+            if isHovering {
+                // Real re-enter (or the re-enter that immediately follows a transient
+                // exit during the expand animation) cancels a pending collapse.
+                collapseTask?.cancel()
+                collapseTask = nil
+            } else {
+                // Defer the collapse so a spurious mouseExited fired mid-expand-animation
+                // does not snap the panel shut right after the expand button is clicked.
+                let task = DispatchWorkItem {
+                    expanded = false
+                    onExpandChange(false)
+                }
+                collapseTask = task
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: task)
             }
         }
         .animation(.easeOut(duration: 0.22), value: expanded)
@@ -158,6 +172,8 @@ struct NotchView: View {
     /// expansion is now click-driven (hover no longer auto-expands).
     private var expandButton: some View {
         Button {
+            collapseTask?.cancel()
+            collapseTask = nil
             expanded = true
             onExpandChange(true)
         } label: {
